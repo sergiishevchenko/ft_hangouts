@@ -1,0 +1,79 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Kotlin build artifacts
+out/
+
+# Log files
+*.log
+
+# Generated files
+captures/
+outputs/
+generated/
+
+# IntelliJ
+*.class
+*.jar
+*.war
+*.ear
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Android
+*.apk
+*.ap_
+*.aab
+
+# NDK / CMake
+.cxx/
+
+# Firebase / Google services
+google-services.json
+app/google-services.json
+
+# Keystore files
+*.jks
+*.keystore
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/readme.md
+
+# Misc
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Gradle caches
+.gradle/
+build/
+
+# Kotlin
+*.kotlin_module
+
+# Jetpack Compose Preview cache
+.idea/compose-preview-cache/
+
+# Temporary files
+*.tmp
+*.temp

@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">ft_hangouts_42</string>
+    <string name="last_backgrounded_at">Dernière mise en arrière-plan à</string>
+    <string name="name">Nom</string>
+    <string name="phone">Téléphone</string>
+    <string name="email">Email</string>
+    <string name="address">Adresse</string>
+    <string name="notes">Notes</string>
+    <string name="save">Enregistrer</string>
+    <string name="cancel">Annuler</string>
+    <string name="type_message">Tapez un message</string>
+    <string name="close">Fermer</string>
+</resources>

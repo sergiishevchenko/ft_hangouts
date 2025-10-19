@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">ft_hangouts_42</string>
+    <string name="last_backgrounded_at">Last backgrounded at</string>
+    <string name="name">Name</string>
+    <string name="phone">Phone</string>
+    <string name="email">Email</string>
+    <string name="address">Address</string>
+    <string name="notes">Notes</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="type_message">Type a message</string>
+    <string name="close">Close</string>
 </resources>

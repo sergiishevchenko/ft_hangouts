@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface ContactDao {
 
     @Query("SELECT * FROM contacts ORDER BY name ASC")
-    fun getAllContacts(): List<ContactEntity>
+    suspend fun getAllContacts(): List<ContactEntity>
 
     @Query("SELECT * FROM contacts WHERE id = :id")
     suspend fun getById(id: Long): ContactEntity?

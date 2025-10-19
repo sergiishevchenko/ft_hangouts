@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.ft_hangouts_42.data.ContactRepository
 import com.example.ft_hangouts_42.data.MessageRepository
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     var contacts by remember { mutableStateOf(listOf<ContactEntity>()) }
     var showEdit by remember { mutableStateOf(false) }
@@ -63,23 +65,22 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
 
     var topBarColor by remember { mutableStateOf(Color(0xFF6200EE)) }
 
-    // Загрузка контактов из Room
     LaunchedEffect(Unit) {
         contacts = contactRepo.getAllContacts()
     }
 
-    // Toast для времени последнего фонового состояния
-    val prefs = LocalContext.current.getSharedPreferences("prefs", 0)
+    val prefs = context.getSharedPreferences("prefs", 0)
     val lastTs = prefs.getLong("last_background_ts", 0L)
     LaunchedEffect(lastTs) {
         if (lastTs != 0L) {
             val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastTs))
-            Toast.makeText(LocalContext.current, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
         }
     }
 
     Scaffold(
         topBar = {
+            @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
                 title = { Text("FtHangouts") },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor),
@@ -118,7 +119,6 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                 }
             }
 
-            // Редактирование контакта
             if (showEdit) {
                 ContactEditScreen(
                     repo = contactRepo,
@@ -130,7 +130,6 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                 )
             }
 
-            // Экран переписки
             if (showConversation && selectedContact != null) {
                 ConversationScreen(
                     contactName = selectedContact!!.name,

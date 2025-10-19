@@ -15,6 +15,7 @@ import com.example.ft_hangouts_42.data.MessageRepository
 import com.example.ft_hangouts_42.data.room.MessageEntity
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationScreen(
     contactName: String,
@@ -26,7 +27,6 @@ fun ConversationScreen(
     var messages by remember { mutableStateOf(listOf<MessageEntity>()) }
     var inputText by remember { mutableStateOf("") }
 
-    // Загрузка сообщений
     LaunchedEffect(contactId) {
         messages = repo.getMessagesForContact(contactId)
     }

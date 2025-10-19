@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.fthangouts"
-    compileSdk = 34
+    namespace = "com.example.ft_hangouts_42"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.fthangouts"
+        applicationId = "com.example.ft_hangouts_42"
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -43,7 +43,8 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.compose.ui:ui:1.5.3")
     implementation("androidx.compose.ui:ui-tooling-preview:1.5.3")
-    implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.material3:material3:1.4.0")
+    implementation("androidx.compose.material:material-icons-extended:1.5.1")
 
     // Room
     implementation("androidx.room:room-runtime:2.6.1")

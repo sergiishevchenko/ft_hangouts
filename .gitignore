@@ -2,7 +2,6 @@
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
-.gradle/
 local.properties
 
 # Android Studio
@@ -63,10 +62,6 @@ fastlane/readme.md
 .idea/workspace.xml
 .idea/navEditor.xml
 .idea/assetWizardSettings.xml
-
-# Gradle caches
-.gradle/
-build/
 
 # Kotlin
 *.kotlin_module

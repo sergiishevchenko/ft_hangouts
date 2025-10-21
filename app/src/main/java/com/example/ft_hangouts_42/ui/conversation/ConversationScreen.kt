@@ -40,7 +40,7 @@ fun ConversationScreen(
         topBar = {
             TopAppBar(
                 title = { Text(contactName) },
-                navigationIcon = { // Добавляем кнопку назад слева
+                navigationIcon = {
                     IconButton(onClick = onNavigateToContacts) {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,

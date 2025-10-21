@@ -92,10 +92,12 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                contactToEdit = null
-                showEdit = true
-            }) { Text("+") }
+            if (!showConversation && !showEdit) {
+                FloatingActionButton(onClick = {
+                    contactToEdit = null
+                    showEdit = true
+                }) { Text("+") }
+            }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {

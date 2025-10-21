@@ -11,6 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
 import com.example.ft_hangouts_42.data.MessageRepository
 import com.example.ft_hangouts_42.data.room.MessageEntity
 import kotlinx.coroutines.launch
@@ -35,18 +38,20 @@ fun ConversationScreen(
         topBar = {
             TopAppBar(
                 title = { Text(contactName) },
-                actions = {
-                    TextButton(onClick = onClose) { Text("Close", color = Color.White) }
-                }
+                actions = { TextButton(onClick = onClose) { Text("Close", color = Color.White) } }
             )
         }
     ) { padding ->
-        Column(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
             LazyColumn(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
                 reverseLayout = false
             ) {
                 items(messages) { msg ->
@@ -54,9 +59,12 @@ fun ConversationScreen(
                 }
             }
 
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .padding(bottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
                     value = inputText,

@@ -19,7 +19,7 @@ class ConversationActivity : ComponentActivity() {
                 contactName = contactName,
                 contactId = contactId,
                 repo = repo,
-                onClose = { finish() }
+                onNavigateToContacts = { finish() }
             )
         }
     }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import com.example.ft_hangouts_42.data.MessageRepository
 import com.example.ft_hangouts_42.data.room.MessageEntity
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +26,7 @@ fun ConversationScreen(
     contactName: String,
     contactId: Long,
     repo: MessageRepository,
-    onClose: () -> Unit
+    onNavigateToContacts: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     var messages by remember { mutableStateOf(listOf<MessageEntity>()) }
@@ -38,7 +40,14 @@ fun ConversationScreen(
         topBar = {
             TopAppBar(
                 title = { Text(contactName) },
-                actions = { TextButton(onClick = onClose) { Text("Close", color = Color.White) } }
+                navigationIcon = { // Добавляем кнопку назад слева
+                    IconButton(onClick = onNavigateToContacts) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            contentDescription = "Back to contacts"
+                        )
+                    }
+                }
             )
         }
     ) { padding ->

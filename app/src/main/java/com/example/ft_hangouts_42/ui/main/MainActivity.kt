@@ -137,7 +137,10 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                     contactName = selectedContact!!.name,
                     contactId = selectedContact!!.id,
                     repo = messageRepo,
-                    onClose = { showConversation = false }
+                    onNavigateToContacts = {
+                        showConversation = false
+                        selectedContact = null
+                    }
                 )
             }
         }

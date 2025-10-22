@@ -28,6 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.ft_hangouts_42.utils.LocaleHelper
 import android.content.Context
 import androidx.compose.material.icons.filled.Language
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
 
@@ -43,12 +47,32 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        requestSmsPermission()
+
         contactRepo = ContactRepository(this)
         messageRepo = MessageRepository(this)
 
         setContent {
             MaterialTheme {
                 MainScreen(contactRepo, messageRepo)
+            }
+        }
+    }
+
+    private fun requestSmsPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS), 100)
+        }
+    }
+
+    @Suppress("Deprecated")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 100) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "SMS permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show()
             }
         }
     }

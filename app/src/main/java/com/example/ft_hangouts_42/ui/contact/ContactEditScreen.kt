@@ -5,8 +5,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.example.ft_hangouts_42.data.ContactRepository
 import com.example.ft_hangouts_42.data.room.ContactEntity
+import com.example.ft_hangouts_42.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -31,31 +33,31 @@ fun ContactEditScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.name)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Phone") },
+                label = { Text(stringResource(R.string.phone)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = { Text(stringResource(R.string.email)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = address,
                 onValueChange = { address = it },
-                label = { Text("Address") },
+                label = { Text(stringResource(R.string.address)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Notes") },
+                label = { Text(stringResource(R.string.notes)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -88,13 +90,26 @@ fun ContactEditScreen(
                         onClose()
                     }
                 }) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
+                if (contact != null) {
+                    Button(onClick = {
+                        scope.launch {
+                            repo.delete(contact)
+                            onClose()
+                        }
+                    }) {
+                        Text(stringResource(R.string.delete))
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
                 Button(onClick = onClose) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         }

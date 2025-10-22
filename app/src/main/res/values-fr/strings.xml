@@ -10,4 +10,5 @@
     <string name="cancel">Annuler</string>
     <string name="type_message">Tapez un message</string>
     <string name="close">Fermer</string>
+    <string name="delete">Supprimer</string>
 </resources>

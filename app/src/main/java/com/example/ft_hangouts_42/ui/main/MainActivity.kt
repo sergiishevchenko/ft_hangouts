@@ -102,12 +102,24 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
         }
     }
 
+    val textColor = remember(topBarColor) {
+        if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f) {
+            Color.Black
+        } else {
+            Color.White
+        }
+    }
+
     Scaffold(
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
-                title = { Text("42-hangouts") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor),
+                title = { Text("42-hangouts", color = textColor) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = topBarColor,
+                    titleContentColor = textColor,
+                    actionIconContentColor = textColor
+                ),
                 actions = {
                     IconButton(onClick = {
                         val current = LocaleHelper.getSavedLanguage(context)

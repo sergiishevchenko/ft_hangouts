@@ -1,5 +1,7 @@
 package com.example.ft_hangouts_42.ui.main
 
+import com.example.ft_hangouts_42.utils.toArgbInt
+import com.example.ft_hangouts_42.utils.colorFromArgbInt
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -32,6 +34,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.Alignment
+
 
 class MainActivity : ComponentActivity() {
 
@@ -98,18 +102,26 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
     var showConversation by remember { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<ContactEntity?>(null) }
 
-    var topBarColor by remember { mutableStateOf(Color(0xFF6200EE)) }
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+    val defaultColor = Color(0xFF6200EE)
+    val savedColorInt = prefs.getInt("top_bar_color", defaultColor.toArgbInt())
+    val initialColor = colorFromArgbInt(savedColorInt)
+
+    var topBarColor by remember { mutableStateOf(initialColor) }
+
+    LaunchedEffect(topBarColor) {
+        prefs.edit().putInt("top_bar_color", topBarColor.toArgbInt()).apply()
+    }
 
     LaunchedEffect(Unit) {
         contacts = contactRepo.getAllContacts()
     }
 
-    val prefs = context.getSharedPreferences("prefs", 0)
-    val lastTs = prefs.getLong("last_background_ts", 0L)
+    val lastTs = context.getSharedPreferences("prefs", 0).getLong("last_background_ts", 0L)
 
     val wasLanguageChanged = remember {
-        context.getSharedPreferences("app_prefs", 0)
-            .getBoolean("language_changed", false)
+        prefs.getBoolean("language_changed", false)
     }
 
     LaunchedEffect(lastTs, wasLanguageChanged) {
@@ -119,10 +131,7 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
         }
 
         if (wasLanguageChanged) {
-            context.getSharedPreferences("app_prefs", 0)
-                .edit()
-                .putBoolean("language_changed", false)
-                .apply()
+            prefs.edit().putBoolean("language_changed", false).apply()
         }
     }
 
@@ -133,6 +142,9 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
             Color.White
         }
     }
+
+    val currentLang = LocaleHelper.getSavedLanguage(context)
+    val displayLang = if (currentLang == "fr") "FR" else "EN"
 
     Scaffold(
         topBar = {
@@ -146,17 +158,24 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                 ),
                 actions = {
                     IconButton(onClick = {
-                        val current = LocaleHelper.getSavedLanguage(context)
-                        val newLang = if (current == "fr") "en" else "fr"
+                        val newLang = if (currentLang == "fr") "en" else "fr"
                         LocaleHelper.saveLanguage(context, newLang)
-                        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                            .edit()
+                        prefs.edit()
                             .putBoolean("language_changed", true)
                             .apply()
-
                         (context as? ComponentActivity)?.recreate()
                     }) {
-                        Icon(Icons.Default.Language, contentDescription = "Switch Language")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Language, contentDescription = "Switch Language")
+                            Text(
+                                text = displayLang,
+                                color = textColor,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
                     }
 
                     IconButton(onClick = {
@@ -203,13 +222,11 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-
                             Text(
                                 text = contact.phone,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-
                             contact.email?.let { email ->
                                 if (email.isNotBlank()) {
                                     Text(
@@ -219,7 +236,6 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                                     )
                                 }
                             }
-
                             contact.address?.let { addr ->
                                 if (addr.isNotBlank()) {
                                     Text(
@@ -229,7 +245,6 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                                     )
                                 }
                             }
-
                             contact.notes?.let { note ->
                                 if (note.isNotBlank()) {
                                     val preview = if (note.length > 30) "${note.take(30)}…" else note

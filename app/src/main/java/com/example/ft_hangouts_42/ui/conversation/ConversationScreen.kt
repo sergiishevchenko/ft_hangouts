@@ -19,6 +19,8 @@ import com.example.ft_hangouts_42.data.room.MessageEntity
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.ui.res.stringResource
+import com.example.ft_hangouts_42.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +81,7 @@ fun ConversationScreen(
                     value = inputText,
                     onValueChange = { inputText = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Type a message") }
+                    label = { Text(stringResource(R.string.type_message)) }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = {
@@ -97,7 +99,7 @@ fun ConversationScreen(
                         }
                     }
                 }) {
-                    Text("Send")
+                    Text(stringResource(R.string.send))
                 }
             }
         }

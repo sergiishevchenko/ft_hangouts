@@ -6,39 +6,45 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ft_hangouts_42.data.ContactRepository
 import com.example.ft_hangouts_42.data.MessageRepository
 import com.example.ft_hangouts_42.data.room.ContactEntity
 import com.example.ft_hangouts_42.ui.contact.ContactEditScreen
 import com.example.ft_hangouts_42.ui.conversation.ConversationScreen
+import com.example.ft_hangouts_42.utils.LocaleHelper
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.ui.text.font.FontWeight
-import com.example.ft_hangouts_42.utils.LocaleHelper
-import android.content.Context
-import androidx.compose.material.icons.filled.Language
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import androidx.compose.animation.animateContentSize
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.compose.ui.Alignment
-
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 class MainActivity : ComponentActivity() {
-
     private lateinit var contactRepo: ContactRepository
     private lateinit var messageRepo: MessageRepository
 
@@ -50,21 +56,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         requestSmsPermission()
-
         contactRepo = ContactRepository(this)
         messageRepo = MessageRepository(this)
-
-        setContent {
-            MaterialTheme {
-                MainScreen(contactRepo, messageRepo)
-            }
-        }
+        setContent { MaterialTheme { MainScreen(contactRepo, messageRepo) } }
     }
 
     private fun requestSmsPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS), 100)
         }
     }
@@ -73,11 +74,9 @@ class MainActivity : ComponentActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 100) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
                 Toast.makeText(this, "SMS permission granted", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show()
-            }
+            else Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -90,6 +89,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
     val scope = rememberCoroutineScope()
@@ -98,57 +98,38 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
     var contacts by remember { mutableStateOf(listOf<ContactEntity>()) }
     var showEdit by remember { mutableStateOf(false) }
     var contactToEdit by remember { mutableStateOf<ContactEntity?>(null) }
-
     var showConversation by remember { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<ContactEntity?>(null) }
 
     val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-
     val defaultColor = Color(0xFF6200EE)
     val savedColorInt = prefs.getInt("top_bar_color", defaultColor.toArgbInt())
-    val initialColor = colorFromArgbInt(savedColorInt)
-
-    var topBarColor by remember { mutableStateOf(initialColor) }
+    var topBarColor by remember { mutableStateOf(colorFromArgbInt(savedColorInt)) }
 
     LaunchedEffect(topBarColor) {
         prefs.edit().putInt("top_bar_color", topBarColor.toArgbInt()).apply()
     }
 
-    LaunchedEffect(Unit) {
-        contacts = contactRepo.getAllContacts()
-    }
+    LaunchedEffect(Unit) { contacts = contactRepo.getAllContacts() }
 
     val lastTs = context.getSharedPreferences("prefs", 0).getLong("last_background_ts", 0L)
-
-    val wasLanguageChanged = remember {
-        prefs.getBoolean("language_changed", false)
-    }
+    val wasLanguageChanged = prefs.getBoolean("language_changed", false)
 
     LaunchedEffect(lastTs, wasLanguageChanged) {
         if (lastTs != 0L && !wasLanguageChanged) {
             val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastTs))
             Toast.makeText(context, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
         }
-
-        if (wasLanguageChanged) {
-            prefs.edit().putBoolean("language_changed", false).apply()
-        }
+        if (wasLanguageChanged) prefs.edit().putBoolean("language_changed", false).apply()
     }
 
-    val textColor = remember(topBarColor) {
-        if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f) {
-            Color.Black
-        } else {
-            Color.White
-        }
-    }
-
+    val textColor = if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f)
+        Color.Black else Color.White
     val currentLang = LocaleHelper.getSavedLanguage(context)
     val displayLang = if (currentLang == "fr") "FR" else "EN"
 
     Scaffold(
         topBar = {
-            @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
                 title = { Text("42-hangouts", color = textColor) },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -160,50 +141,55 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                     IconButton(onClick = {
                         val newLang = if (currentLang == "fr") "en" else "fr"
                         LocaleHelper.saveLanguage(context, newLang)
-                        prefs.edit()
-                            .putBoolean("language_changed", true)
-                            .apply()
+                        prefs.edit().putBoolean("language_changed", true).apply()
                         (context as? ComponentActivity)?.recreate()
                     }) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Default.Language, contentDescription = "Switch Language")
-                            Text(
-                                text = displayLang,
-                                color = textColor,
-                                style = MaterialTheme.typography.labelMedium
-                            )
+                            Icon(Icons.Default.Language, contentDescription = null)
+                            Text(displayLang, color = textColor, style = MaterialTheme.typography.labelMedium)
                         }
                     }
-
                     IconButton(onClick = {
-                        topBarColor = if (topBarColor == Color.Red) Color.Blue else Color.Red
+                        topBarColor = if (topBarColor == Color.Red) Color(0xFF3F51B5) else Color.Red
                     }) {
-                        Icon(Icons.Default.ColorLens, contentDescription = "Change Color")
+                        Icon(Icons.Default.ColorLens, contentDescription = null)
                     }
                 }
             )
         },
         floatingActionButton = {
             if (!showConversation && !showEdit) {
-                FloatingActionButton(onClick = {
-                    contactToEdit = null
-                    showEdit = true
-                }) {
-                    Text("+")
+                FloatingActionButton(
+                    onClick = {
+                        contactToEdit = null
+                        showEdit = true
+                    },
+                    containerColor = Color(0xFF7E57C2),
+                    contentColor = Color.White
+                ) {
+                    Text("+", style = MaterialTheme.typography.titleLarge)
                 }
             }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 items(contacts) { contact ->
+                    val colorScheme = MaterialTheme.colorScheme
+                    val backgroundColor = colorScheme.surfaceVariant.copy(alpha = 0.4f)
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(4.dp)
+                            .animateContentSize()
                             .combinedClickable(
                                 onClick = {
                                     selectedContact = contact
@@ -214,45 +200,82 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                                     showEdit = true
                                 }
                             ),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(6.dp)
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = contact.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = contact.phone,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            contact.email?.let { email ->
-                                if (email.isNotBlank()) {
-                                    Text(
-                                        text = "📧 $email",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = colorScheme.surface.copy(alpha = 0.85f),
+                                        shape = RoundedCornerShape(16.dp)
                                     )
+                                    .padding(start = 20.dp, top = 18.dp, end = 16.dp, bottom = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = contact.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = colorScheme.onSurface
+                                    )
+                                )
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        painter = rememberVectorPainter(Icons.Default.Phone),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color(0xFF4CAF50)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(contact.phone, color = Color(0xFF2E7D32))
                                 }
-                            }
-                            contact.address?.let { addr ->
-                                if (addr.isNotBlank()) {
-                                    Text(
-                                        text = "📍 $addr",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+
+                                contact.email?.takeIf { it.isNotBlank() }?.let {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            painter = rememberVectorPainter(Icons.Default.Email),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Color(0xFF1E88E5)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(it, color = Color(0xFF1565C0))
+                                    }
                                 }
-                            }
-                            contact.notes?.let { note ->
-                                if (note.isNotBlank()) {
-                                    val preview = if (note.length > 30) "${note.take(30)}…" else note
-                                    Text(
-                                        text = "📝 $preview",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+
+                                contact.address?.takeIf { it.isNotBlank() }?.let {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            painter = rememberVectorPainter(Icons.Default.LocationOn),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Color(0xFFF57C00)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(it, color = Color(0xFFEF6C00))
+                                    }
+                                }
+
+                                contact.notes?.takeIf { it.isNotBlank() }?.let {
+                                    val preview = if (it.length > 30) "${it.take(30)}…" else it
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            painter = rememberVectorPainter(Icons.Default.Note),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Color(0xFF8E24AA)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(preview, color = Color(0xFF6A1B9A))
+                                    }
                                 }
                             }
                         }

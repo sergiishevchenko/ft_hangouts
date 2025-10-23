@@ -115,12 +115,17 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
     val lastTs = context.getSharedPreferences("prefs", 0).getLong("last_background_ts", 0L)
     val wasLanguageChanged = prefs.getBoolean("language_changed", false)
 
-    LaunchedEffect(lastTs, wasLanguageChanged) {
-        if (lastTs != 0L && !wasLanguageChanged) {
+    var shownOnce by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (!shownOnce && lastTs != 0L && !wasLanguageChanged) {
+            shownOnce = true
             val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastTs))
             Toast.makeText(context, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
         }
-        if (wasLanguageChanged) prefs.edit().putBoolean("language_changed", false).apply()
+        if (wasLanguageChanged) {
+            prefs.edit().putBoolean("language_changed", false).apply()
+        }
     }
 
     val textColor = if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f)

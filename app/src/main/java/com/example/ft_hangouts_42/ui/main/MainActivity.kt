@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(pickedImageUri) {
                 if (pickedImageUri != null) {
                     selectedImageUri = pickedImageUri
-                    pickedImageUri = null // Сбросить, чтобы не срабатывало дважды
+                    pickedImageUri = null
                 }
             }
 

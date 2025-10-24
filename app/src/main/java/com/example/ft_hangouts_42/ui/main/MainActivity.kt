@@ -44,6 +44,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalConfiguration
 
 class MainActivity : ComponentActivity() {
@@ -119,11 +120,11 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    var contacts by remember { mutableStateOf(listOf<ContactEntity>()) }
-    var showEdit by remember { mutableStateOf(false) }
-    var contactToEdit by remember { mutableStateOf<ContactEntity?>(null) }
-    var showConversation by remember { mutableStateOf(false) }
-    var selectedContact by remember { mutableStateOf<ContactEntity?>(null) }
+    var contacts by rememberSaveable { mutableStateOf(listOf<ContactEntity>()) }
+    var showEdit by rememberSaveable { mutableStateOf(false) }
+    var contactToEdit by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
+    var showConversation by rememberSaveable { mutableStateOf(false) }
+    var selectedContact by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
 
     val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     val defaultColor = Color(0xFF6200EE)
@@ -139,13 +140,16 @@ fun MainScreen(
     val lastTs = context.getSharedPreferences("prefs", 0).getLong("last_background_ts", 0L)
     val wasLanguageChanged = prefs.getBoolean("language_changed", false)
 
-    var shownOnce by remember { mutableStateOf(false) }
+    var shownOnce by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(lastTs, wasLanguageChanged) {
         if (!shownOnce && lastTs != 0L && !wasLanguageChanged) {
-            shownOnce = true
-            val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastTs))
-            Toast.makeText(context, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+            val elapsed = System.currentTimeMillis() - lastTs
+            if (elapsed > 2000) {
+                shownOnce = true
+                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastTs))
+                Toast.makeText(context, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+            }
         }
         if (wasLanguageChanged) {
             prefs.edit().putBoolean("language_changed", false).apply()

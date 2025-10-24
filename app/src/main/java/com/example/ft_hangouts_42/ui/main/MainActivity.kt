@@ -43,23 +43,43 @@ import androidx.compose.animation.animateContentSize
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalConfiguration
 
 class MainActivity : ComponentActivity() {
     private lateinit var contactRepo: ContactRepository
     private lateinit var messageRepo: MessageRepository
-
-    override fun attachBaseContext(newBase: Context) {
-        val lang = LocaleHelper.getSavedLanguage(newBase)
-        val contextWithLocale = LocaleHelper.setLocale(newBase, lang)
-        super.attachBaseContext(contextWithLocale)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestSmsPermission()
         contactRepo = ContactRepository(this)
         messageRepo = MessageRepository(this)
-        setContent { MaterialTheme { MainScreen(contactRepo, messageRepo) } }
+
+        setContent {
+            val savedLang = LocaleHelper.getSavedLanguage(this)
+            var currentLang by remember { mutableStateOf(savedLang) }
+            val contextWithLocale = remember(currentLang) {
+                LocaleHelper.setLocale(this, currentLang)
+            }
+
+            CompositionLocalProvider(LocalContext provides contextWithLocale) {
+                MaterialTheme {
+                    MainScreen(
+                        contactRepo = contactRepo,
+                        messageRepo = messageRepo,
+                        onLanguageChange = { lang ->
+                            LocaleHelper.saveLanguage(this, lang)
+                            getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                                .edit()
+                                .putBoolean("language_changed", true)
+                                .apply()
+                            currentLang = lang
+                        }
+                    )
+                }
+            }
+        }
     }
 
     private fun requestSmsPermission() {
@@ -91,7 +111,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
+fun MainScreen(
+    contactRepo: ContactRepository,
+    messageRepo: MessageRepository,
+    onLanguageChange: (String) -> Unit
+) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -145,9 +169,7 @@ fun MainScreen(contactRepo: ContactRepository, messageRepo: MessageRepository) {
                 actions = {
                     IconButton(onClick = {
                         val newLang = if (currentLang == "fr") "en" else "fr"
-                        LocaleHelper.saveLanguage(context, newLang)
-                        prefs.edit().putBoolean("language_changed", true).apply()
-                        (context as? ComponentActivity)?.recreate()
+                        onLanguageChange(newLang)
                     }) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

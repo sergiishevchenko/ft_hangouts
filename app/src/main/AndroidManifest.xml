@@ -20,15 +20,6 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
-            android:name=".ui.contact.ContactEditActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.conversation.ConversationActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="false" />
-
-        <activity
             android:name=".ui.main.MainActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">

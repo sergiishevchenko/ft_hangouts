@@ -64,7 +64,7 @@ fun ConversationScreen(
                 reverseLayout = false
             ) {
                 items(messages, key = { it.id }) { msg ->
-                    MessageItem(msg)
+                    MessageItem(msg, contactName)
                 }
             }
 
@@ -104,9 +104,10 @@ fun ConversationScreen(
 }
 
 @Composable
-fun MessageItem(message: MessageEntity) {
+fun MessageItem(message: MessageEntity, senderName: String) {
     val alignment = if (message.isSent) Arrangement.End else Arrangement.Start
     val bgColor = if (message.isSent) Color(0xFFDCF8C6) else Color(0xFFEFEFEF)
+    val senderLabel = if (message.isSent) "Me" else senderName
 
     Row(
         modifier = Modifier
@@ -114,12 +115,23 @@ fun MessageItem(message: MessageEntity) {
             .padding(4.dp),
         horizontalArrangement = alignment
     ) {
-        Box(
-            modifier = Modifier
-                .background(color = bgColor, shape = RoundedCornerShape(8.dp))
-                .padding(8.dp)
+        Column(
+            horizontalAlignment = if (message.isSent) Alignment.End else Alignment.Start
         ) {
-            Text(message.text)
+            Text(
+                text = senderLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+                // modifier = Modifier.padding(bottom = 2.dp)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Box(
+                modifier = Modifier
+                    .background(color = bgColor, shape = RoundedCornerShape(8.dp))
+                    .padding(8.dp)
+            ) {
+                Text(message.text)
+            }
         }
     }
 }

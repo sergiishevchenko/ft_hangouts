@@ -45,11 +45,13 @@ import androidx.core.content.ContextCompat
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalConfiguration
 
 class MainActivity : ComponentActivity() {
     private lateinit var contactRepo: ContactRepository
     private lateinit var messageRepo: MessageRepository
+
+    private var wasInBackground = false
+    private var lastBackgroundTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,9 +78,30 @@ class MainActivity : ComponentActivity() {
                                 .putBoolean("language_changed", true)
                                 .apply()
                             currentLang = lang
+                        },
+                        onShowToastRequested = { timestamp ->
+                            if (timestamp != 0L) {
+                                val s = SimpleDateFormat.getDateTimeInstance().format(Date(timestamp))
+                                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+                            }
                         }
                     )
                 }
+            }
+        }
+
+        if (wasInBackground && lastBackgroundTime != 0L) {
+            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val wasLanguageChanged = prefs.getBoolean("language_changed", false)
+            if (!wasLanguageChanged) {
+                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
+                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            } else {
+                prefs.edit().putBoolean("language_changed", false).apply()
+                wasInBackground = false
+                lastBackgroundTime = 0L
             }
         }
     }
@@ -103,10 +126,38 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        wasInBackground = true
+        lastBackgroundTime = System.currentTimeMillis()
         getSharedPreferences("prefs", MODE_PRIVATE)
             .edit()
-            .putLong("last_background_ts", System.currentTimeMillis())
+            .putLong("last_background_ts", lastBackgroundTime)
             .apply()
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        if (wasInBackground && lastBackgroundTime != 0L) {
+            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val wasLanguageChanged = prefs.getBoolean("language_changed", false)
+            if (!wasLanguageChanged) {
+                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
+                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            } else {
+                prefs.edit().putBoolean("language_changed", false).apply()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
     }
 }
 
@@ -115,7 +166,8 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     contactRepo: ContactRepository,
     messageRepo: MessageRepository,
-    onLanguageChange: (String) -> Unit
+    onLanguageChange: (String) -> Unit,
+    onShowToastRequested: (Long) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -136,25 +188,6 @@ fun MainScreen(
     }
 
     LaunchedEffect(Unit) { contacts = contactRepo.getAllContacts() }
-
-    val lastTs = context.getSharedPreferences("prefs", 0).getLong("last_background_ts", 0L)
-    val wasLanguageChanged = prefs.getBoolean("language_changed", false)
-
-    var shownOnce by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(lastTs, wasLanguageChanged) {
-        if (!shownOnce && lastTs != 0L && !wasLanguageChanged) {
-            val elapsed = System.currentTimeMillis() - lastTs
-            if (elapsed > 2000) {
-                shownOnce = true
-                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastTs))
-                Toast.makeText(context, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
-            }
-        }
-        if (wasLanguageChanged) {
-            prefs.edit().putBoolean("language_changed", false).apply()
-        }
-    }
 
     val textColor = if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f)
         Color.Black else Color.White

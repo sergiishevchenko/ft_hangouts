@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.res.stringResource
 import com.example.ft_hangouts_42.R
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,12 +33,8 @@ fun ConversationScreen(
     onNavigateToContacts: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    var messages by remember { mutableStateOf(listOf<MessageEntity>()) }
+    val messages by repo.getMessagesForContact(contactId).collectAsState(initial = emptyList())
     var inputText by remember { mutableStateOf("") }
-
-    LaunchedEffect(contactId) {
-        messages = repo.getMessagesForContact(contactId)
-    }
 
     Scaffold(
         topBar = {
@@ -45,7 +43,7 @@ fun ConversationScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateToContacts) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back to contacts"
                         )
                     }
@@ -65,7 +63,7 @@ fun ConversationScreen(
                     .padding(horizontal = 8.dp),
                 reverseLayout = false
             ) {
-                items(messages) { msg ->
+                items(messages, key = { it.id }) { msg ->
                     MessageItem(msg)
                 }
             }
@@ -94,7 +92,6 @@ fun ConversationScreen(
                                 isSent = true
                             )
                             repo.addMessage(newMsg)
-                            messages = repo.getMessagesForContact(contactId)
                             inputText = ""
                         }
                     }

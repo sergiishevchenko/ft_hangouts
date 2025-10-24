@@ -1,12 +1,13 @@
 package com.example.ft_hangouts_42.data.room
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE contactId = :contactId ORDER BY timestamp ASC")
-    suspend fun getMessagesForContact(contactId: Long): List<MessageEntity>
+    fun getMessagesForContact(contactId: Long): Flow<List<MessageEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(message: MessageEntity)

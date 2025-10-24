@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -22,11 +25,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.example.ft_hangouts_42.data.ContactRepository
 import com.example.ft_hangouts_42.data.MessageRepository
 import com.example.ft_hangouts_42.data.room.ContactEntity
@@ -39,12 +45,18 @@ import java.util.*
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.animateContentSize
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 
 class MainActivity : ComponentActivity() {
     private lateinit var contactRepo: ContactRepository
@@ -66,6 +78,27 @@ class MainActivity : ComponentActivity() {
                 LocaleHelper.setLocale(this, currentLang)
             }
 
+            var pickedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+            val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                pickedImageUri = uri
+            }
+
+            val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) {
+                    imagePickerLauncher.launch("image/*")
+                }
+            }
+
+            var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+            LaunchedEffect(pickedImageUri) {
+                if (pickedImageUri != null) {
+                    selectedImageUri = pickedImageUri
+                    pickedImageUri = null // Сбросить, чтобы не срабатывало дважды
+                }
+            }
+
             CompositionLocalProvider(LocalContext provides contextWithLocale) {
                 MaterialTheme {
                     MainScreen(
@@ -84,7 +117,11 @@ class MainActivity : ComponentActivity() {
                                 val s = SimpleDateFormat.getDateTimeInstance().format(Date(timestamp))
                                 Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
                             }
-                        }
+                        },
+                        imagePickerLauncher = imagePickerLauncher,
+                        permissionLauncher = permissionLauncher,
+                        selectedImageUri = selectedImageUri,
+                        onSelectedImageUriChanged = { selectedImageUri = it }
                     )
                 }
             }
@@ -167,7 +204,11 @@ fun MainScreen(
     contactRepo: ContactRepository,
     messageRepo: MessageRepository,
     onLanguageChange: (String) -> Unit,
-    onShowToastRequested: (Long) -> Unit
+    onShowToastRequested: (Long) -> Unit,
+    imagePickerLauncher: ActivityResultLauncher<String>,
+    permissionLauncher: ActivityResultLauncher<String>,
+    selectedImageUri: Uri?,
+    onSelectedImageUriChanged: (Uri?) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -283,13 +324,41 @@ fun MainScreen(
                                     .padding(start = 20.dp, top = 18.dp, end = 16.dp, bottom = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    text = contact.name,
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = colorScheme.onSurface
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (contact.avatarPath != null) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(contact.avatarPath),
+                                            contentDescription = "Contact Avatar",
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(Color.LightGray),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = contact.name.take(1).uppercase(),
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = contact.name,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = colorScheme.onSurface
+                                        )
                                     )
-                                )
+                                }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
@@ -348,13 +417,18 @@ fun MainScreen(
             }
 
             if (showEdit) {
+                println("MainScreen: Passing selectedImageUri = $selectedImageUri to ContactEditScreen")
                 ContactEditScreen(
                     repo = contactRepo,
                     contact = contactToEdit,
                     onClose = {
                         scope.launch { contacts = contactRepo.getAllContacts() }
                         showEdit = false
-                    }
+                    },
+                    imagePickerLauncher = imagePickerLauncher,
+                    permissionLauncher = permissionLauncher,
+                    selectedImageUri = selectedImageUri,
+                    onSelectedImageUriChanged = onSelectedImageUriChanged
                 )
             }
 

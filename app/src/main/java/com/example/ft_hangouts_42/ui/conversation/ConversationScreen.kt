@@ -21,8 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.res.stringResource
 import com.example.ft_hangouts_42.R
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +120,6 @@ fun MessageItem(message: MessageEntity, senderName: String) {
                 text = senderLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.Gray
-                // modifier = Modifier.padding(bottom = 2.dp)
             )
             Spacer(modifier = Modifier.height(2.dp))
             Box(

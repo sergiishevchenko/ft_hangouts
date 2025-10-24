@@ -13,5 +13,6 @@ data class ContactEntity(
     val phone: String,
     val email: String? = null,
     val address: String? = null,
-    val notes: String? = null
+    val notes: String? = null,
+    val avatarPath: String? = null
 ) : Parcelable

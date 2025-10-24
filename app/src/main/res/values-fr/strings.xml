@@ -12,4 +12,5 @@
     <string name="close">Fermer</string>
     <string name="delete">Supprimer</string>
     <string name="send">Envoyer</string>
+    <string name="change_avatar">Changer d\'avatar</string>
 </resources>

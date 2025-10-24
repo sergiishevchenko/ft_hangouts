@@ -47,11 +47,15 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.4.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.runtime.saveable)
+    implementation(libs.androidx.runtime.saveable)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.ui)
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
 }

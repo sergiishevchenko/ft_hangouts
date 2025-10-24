@@ -1,8 +1,11 @@
 package com.example.ft_hangouts_42.ui.contact
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -19,17 +22,22 @@ fun ContactEditScreen(
 ) {
     val scope = rememberCoroutineScope()
 
-    var name by remember { mutableStateOf(contact?.name ?: "") }
-    var phone by remember { mutableStateOf(contact?.phone ?: "") }
-    var email by remember { mutableStateOf(contact?.email ?: "") }
-    var address by remember { mutableStateOf(contact?.address ?: "") }
-    var notes by remember { mutableStateOf(contact?.notes ?: "") }
+    var name by rememberSaveable { mutableStateOf(contact?.name ?: "") }
+    var phone by rememberSaveable { mutableStateOf(contact?.phone ?: "") }
+    var email by rememberSaveable { mutableStateOf(contact?.email ?: "") }
+    var address by rememberSaveable { mutableStateOf(contact?.address ?: "") }
+    var notes by rememberSaveable { mutableStateOf(contact?.notes ?: "") }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },

@@ -13,4 +13,6 @@
     <string name="delete">Supprimer</string>
     <string name="send">Envoyer</string>
     <string name="change_avatar">Changer d\'avatar</string>
+    <string name="send_message">Envoyer un message</string>
+    <string name="edit">Modifier</string>
 </resources>

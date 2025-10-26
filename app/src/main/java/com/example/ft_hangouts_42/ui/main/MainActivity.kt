@@ -453,7 +453,7 @@ fun MainScreen(
                             val menuX = cardCenterX - (menuWidthPx / 2.0)
 
                             val cardCenterY = cardCoordinates!!.y + (cardSize!!.height / 2.0)
-                            val estimatedMenuHeightPx = with(density) { 150.dp.toPx() }
+                            val estimatedMenuHeightPx = with(density) { 100.dp.toPx() }
                             val menuY = cardCenterY - (estimatedMenuHeightPx / 2.0)
 
                             DpOffset(

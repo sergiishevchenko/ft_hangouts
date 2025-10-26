@@ -2,6 +2,7 @@ package com.example.ft_hangouts_42.ui.main
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -15,8 +16,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,7 +51,6 @@ import com.example.ft_hangouts_42.data.room.ContactEntity
 import com.example.ft_hangouts_42.ui.contact.ContactEditScreen
 import com.example.ft_hangouts_42.ui.conversation.ConversationScreen
 import com.example.ft_hangouts_42.utils.LocaleHelper
-import com.example.ft_hangouts_42.utils.collectIsHoveredAsState
 import com.example.ft_hangouts_42.utils.colorFromArgbInt
 import com.example.ft_hangouts_42.utils.toArgbInt
 import kotlinx.coroutines.launch
@@ -131,6 +129,21 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        if (wasInBackground && lastBackgroundTime != 0L) {
+            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val wasLanguageChanged = prefs.getBoolean("language_changed", false)
+            if (!wasLanguageChanged) {
+                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
+                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            } else {
+                prefs.edit().putBoolean("language_changed", false).apply()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            }
+        }
     }
 
     private fun requestSmsPermission() {
@@ -139,6 +152,52 @@ class MainActivity : ComponentActivity() {
         ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS), 100)
         }
+    }
+
+    @Suppress("Deprecated")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 100) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                Toast.makeText(this, "SMS permission granted", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        wasInBackground = true
+        lastBackgroundTime = System.currentTimeMillis()
+        getSharedPreferences("prefs", MODE_PRIVATE)
+            .edit()
+            .putLong("last_background_ts", lastBackgroundTime)
+            .apply()
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        if (wasInBackground && lastBackgroundTime != 0L) {
+            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val wasLanguageChanged = prefs.getBoolean("language_changed", false)
+            if (!wasLanguageChanged) {
+                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
+                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            } else {
+                prefs.edit().putBoolean("language_changed", false).apply()
+                wasInBackground = false
+                lastBackgroundTime = 0L
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
     }
 }
 
@@ -186,6 +245,19 @@ fun MainScreen(
     val currentLang = LocaleHelper.getSavedLanguage(context)
     val displayLang = if (currentLang == "fr") "FR" else "EN"
 
+    val makePhoneCall: (String) -> Unit = { phoneNumber ->
+        val intent = Intent(Intent.ACTION_CALL).apply {
+            data = Uri.parse("tel:$phoneNumber")
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            context.startActivity(intent)
+        } else {
+            Toast.makeText(context, "Permission to call is required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -205,16 +277,11 @@ fun MainScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.Language, contentDescription = null)
-                            Text(
-                                displayLang,
-                                color = textColor,
-                                style = MaterialTheme.typography.labelMedium
-                            )
+                            Text(displayLang, color = textColor, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                     IconButton(onClick = {
-                        topBarColor =
-                            if (topBarColor == Color.Red) Color(0xFF3F51B5) else Color.Red
+                        topBarColor = if (topBarColor == Color.Red) Color(0xFF3F51B5) else Color.Red
                     }) {
                         Icon(Icons.Default.ColorLens, contentDescription = null)
                     }
@@ -260,7 +327,7 @@ fun MainScreen(
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onLongPress = { expandedContactId = contact.id },
-                                    onTap = {}
+                                    onTap = { }
                                 )
                             },
                         colors = CardDefaults.cardColors(containerColor = backgroundColor),
@@ -282,7 +349,9 @@ fun MainScreen(
                                     .padding(start = 20.dp, top = 18.dp, end = 16.dp, bottom = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     if (contact.avatarPath != null) {
                                         Image(
                                             painter = rememberAsyncImagePainter(contact.avatarPath),
@@ -354,8 +423,7 @@ fun MainScreen(
                                 }
 
                                 contact.notes?.takeIf { it.isNotBlank() }?.let {
-                                    val preview =
-                                        if (it.length > 30) "${it.take(30)}…" else it
+                                    val preview = if (it.length > 30) "${it.take(30)}…" else it
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             painter = rememberVectorPainter(Icons.Default.Note),
@@ -374,25 +442,60 @@ fun MainScreen(
             }
 
             currentContactForMenu?.let { contact ->
-                val menuOffset = remember(cardCoordinates, cardSize) {
-                    if (cardCoordinates != null && cardSize != null) {
-                        val x = with(density) { cardCoordinates!!.x.toDp() + cardSize!!.width.toDp() - 200.dp }
-                        val y = with(density) { cardCoordinates!!.y.toDp() + 10.dp }
-                        DpOffset(x, y)
-                    } else DpOffset.Zero
+                val density = LocalDensity.current
+
+                val menuOffset by remember(cardCoordinates, cardSize, density) {
+                    derivedStateOf {
+                        if (cardCoordinates != null && cardSize != null) {
+                            val menuWidthPx = with(density) { 200.dp.toPx() }
+
+                            val cardCenterX = cardCoordinates!!.x + (cardSize!!.width / 2.0)
+                            val menuX = cardCenterX - (menuWidthPx / 2.0)
+
+                            val cardCenterY = cardCoordinates!!.y + (cardSize!!.height / 2.0)
+                            val estimatedMenuHeightPx = with(density) { 150.dp.toPx() }
+                            val menuY = cardCenterY - (estimatedMenuHeightPx / 2.0)
+
+                            DpOffset(
+                                with(density) { menuX.toFloat().toDp() },
+                                with(density) { menuY.toFloat().toDp() }
+                            )
+                        } else DpOffset.Zero
+                    }
                 }
 
                 DropdownMenu(
                     expanded = expandedContactId != null,
                     onDismissRequest = { expandedContactId = null },
-                    modifier = Modifier.width(200.dp),
+                    modifier = Modifier
+                        .width(200.dp),
                     offset = menuOffset,
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp,
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    val emailInteraction = remember { MutableInteractionSource() }
-                    val emailHovered by emailInteraction.collectIsHoveredAsState()
+                    DropdownMenuItem(
+                        onClick = {
+                            // makePhoneCall(contact.phone)
+                            expandedContactId = null
+                            Toast.makeText(context, "Calling ${contact.phone}...", Toast.LENGTH_SHORT).show()
+                        },
+                        text = {
+                            Text(
+                                "Call",
+                                color = Color(0xFF4CAF50),
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Call,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50)
+                            )
+                        }
+                    )
+
                     DropdownMenuItem(
                         onClick = {
                             selectedContact = contact
@@ -402,7 +505,7 @@ fun MainScreen(
                         text = {
                             Text(
                                 stringResource(R.string.send_message),
-                                color = if (emailHovered) Color.White else Color(0xFF1E88E5),
+                                color = Color(0xFF1E88E5),
                                 fontWeight = FontWeight.Medium
                             )
                         },
@@ -410,16 +513,11 @@ fun MainScreen(
                             Icon(
                                 Icons.Default.Send,
                                 contentDescription = null,
-                                tint = if (emailHovered) Color.White else Color(0xFF1E88E5)
+                                tint = Color(0xFF1E88E5)
                             )
-                        },
-                        modifier = Modifier
-                            .background(if (emailHovered) Color(0xFF1E88E5) else Color.Transparent)
-                            .hoverable(emailInteraction)
+                        }
                     )
 
-                    val editInteraction = remember { MutableInteractionSource() }
-                    val editHovered by editInteraction.collectIsHoveredAsState()
                     DropdownMenuItem(
                         onClick = {
                             contactToEdit = contact
@@ -429,7 +527,7 @@ fun MainScreen(
                         text = {
                             Text(
                                 stringResource(R.string.edit),
-                                color = if (editHovered) Color.White else Color(0xFF8E24AA),
+                                color = Color(0xFF8E24AA),
                                 fontWeight = FontWeight.Medium
                             )
                         },
@@ -437,12 +535,9 @@ fun MainScreen(
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = null,
-                                tint = if (editHovered) Color.White else Color(0xFF8E24AA)
+                                tint = Color(0xFF8E24AA)
                             )
-                        },
-                        modifier = Modifier
-                            .background(if (editHovered) Color(0xFF8E24AA) else Color.Transparent)
-                            .hoverable(editInteraction)
+                        }
                     )
                 }
             }

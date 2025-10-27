@@ -64,11 +64,21 @@ class MainActivity : ComponentActivity() {
     private var wasInBackground = false
     private var lastBackgroundTime = 0L
 
+    private lateinit var callPermissionLauncher: ActivityResultLauncher<String>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestSmsPermission()
         contactRepo = ContactRepository(this)
         messageRepo = MessageRepository(this)
+
+        callPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(this, "Call permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, getString(R.string.call_permission_denied), Toast.LENGTH_SHORT).show()
+            }
+        }
 
         setContent {
             val savedLang = LocaleHelper.getSavedLanguage(this)
@@ -100,6 +110,23 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            val makePhoneCall: (String) -> Unit = { phoneNumber ->
+                val intent = Intent(Intent.ACTION_CALL).apply {
+                    data = Uri.parse("tel:$phoneNumber")
+                }
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                    == PackageManager.PERMISSION_GRANTED
+                ) {
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "No app to handle call intent", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                }
+            }
+
             CompositionLocalProvider(LocalContext provides contextWithLocale) {
                 MaterialTheme {
                     MainScreen(
@@ -124,7 +151,8 @@ class MainActivity : ComponentActivity() {
                         imagePickerLauncher = imagePickerLauncher,
                         permissionLauncher = permissionLauncher,
                         selectedImageUri = selectedImageUri,
-                        onSelectedImageUriChanged = { selectedImageUri = it }
+                        onSelectedImageUriChanged = { selectedImageUri = it },
+                        onMakePhoneCall = makePhoneCall
                     )
                 }
             }
@@ -211,7 +239,8 @@ fun MainScreen(
     imagePickerLauncher: ActivityResultLauncher<String>,
     permissionLauncher: ActivityResultLauncher<String>,
     selectedImageUri: Uri?,
-    onSelectedImageUriChanged: (Uri?) -> Unit
+    onSelectedImageUriChanged: (Uri?) -> Unit,
+    onMakePhoneCall: (String) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -244,19 +273,6 @@ fun MainScreen(
         if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f) Color.Black else Color.White
     val currentLang = LocaleHelper.getSavedLanguage(context)
     val displayLang = if (currentLang == "fr") "FR" else "EN"
-
-    val makePhoneCall: (String) -> Unit = { phoneNumber ->
-        val intent = Intent(Intent.ACTION_CALL).apply {
-            data = Uri.parse("tel:$phoneNumber")
-        }
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            context.startActivity(intent)
-        } else {
-            Toast.makeText(context, "Permission to call is required", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -415,7 +431,7 @@ fun MainScreen(
                                             painter = rememberVectorPainter(Icons.Default.LocationOn),
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp),
-                                            tint = Color(0xFFF57C00)
+                                            tint = Color(0xFF8E24AA)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(it, color = Color(0xFFEF6C00))
@@ -476,13 +492,12 @@ fun MainScreen(
                 ) {
                     DropdownMenuItem(
                         onClick = {
-                            // makePhoneCall(contact.phone)
+                            onMakePhoneCall(contact.phone)
                             expandedContactId = null
-                            Toast.makeText(context, "Calling ${contact.phone}...", Toast.LENGTH_SHORT).show()
                         },
                         text = {
                             Text(
-                                "Call",
+                                stringResource(R.string.call),
                                 color = Color(0xFF4CAF50),
                                 fontWeight = FontWeight.Medium
                             )

@@ -15,4 +15,6 @@
     <string name="change_avatar">Changer d\'avatar</string>
     <string name="send_message">Envoyer un message</string>
     <string name="edit">Modifier</string>
+    <string name="call">Appeler</string>
+    <string name="call_permission_denied">L\'autorisation d\'effectuer des appels t\u00e9l\u00e9phoniques est refus\u00e9e. Veuillez l\'activer dans les param\u00e8tres.</string>
 </resources>

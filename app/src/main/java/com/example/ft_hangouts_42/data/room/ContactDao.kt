@@ -1,7 +1,6 @@
 package com.example.ft_hangouts_42.data.room
 
 import androidx.room.*
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ContactDao {

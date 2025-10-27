@@ -139,6 +139,7 @@ class MainActivity : ComponentActivity() {
                                 .putBoolean("language_changed", true)
                                 .apply()
                             currentLang = lang
+                            recreate()
                         },
                         onShowToastRequested = { timestamp ->
                             if (timestamp != 0L) {
@@ -246,14 +247,21 @@ fun MainScreen(
     val context = LocalContext.current
     val density = LocalDensity.current
 
-    var contacts by rememberSaveable { mutableStateOf(listOf<ContactEntity>()) }
+    var contacts by remember { mutableStateOf(listOf<ContactEntity>()) }
     var showEdit by rememberSaveable { mutableStateOf(false) }
     var contactToEdit by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
     var showConversation by rememberSaveable { mutableStateOf(false) }
     var selectedContact by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
 
     var expandedContactId by remember { mutableStateOf<Long?>(null) }
-    val currentContactForMenu = contacts.find { it.id == expandedContactId }
+
+    val currentContactForMenu = remember(contacts, expandedContactId) {
+        val foundContact = contacts.find { it.id == expandedContactId }
+        if (expandedContactId != null && foundContact == null) {
+            expandedContactId = null
+        }
+        foundContact
+    }
 
     var cardCoordinates by remember { mutableStateOf<Offset?>(null) }
     var cardSize by remember { mutableStateOf<IntSize?>(null) }
@@ -267,12 +275,22 @@ fun MainScreen(
         prefs.edit().putInt("top_bar_color", topBarColor.toArgbInt()).apply()
     }
 
-    LaunchedEffect(Unit) { contacts = contactRepo.getAllContacts() }
+    LaunchedEffect(Unit) {
+        contacts = contactRepo.getAllContacts()
+        while (true) {
+            kotlinx.coroutines.delay(2000)
+            contacts = contactRepo.getAllContacts()
+        }
+    }
 
     val textColor =
         if (topBarColor.red + topBarColor.green + topBarColor.blue > 1.5f) Color.Black else Color.White
     val currentLang = LocaleHelper.getSavedLanguage(context)
     val displayLang = if (currentLang == "fr") "FR" else "EN"
+
+    LaunchedEffect(currentLang) {
+        expandedContactId = null
+    }
 
     Scaffold(
         topBar = {
@@ -326,7 +344,7 @@ fun MainScreen(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(contacts) { contact ->
+                items(contacts, key = { it.id }) { contact ->
                     val colorScheme = MaterialTheme.colorScheme
                     val backgroundColor = colorScheme.surfaceVariant.copy(alpha = 0.4f)
 
@@ -340,9 +358,11 @@ fun MainScreen(
                                     cardSize = layoutCoordinates.size
                                 }
                             }
-                            .pointerInput(Unit) {
+                            .pointerInput(contact.id) {
                                 detectTapGestures(
-                                    onLongPress = { expandedContactId = contact.id },
+                                    onLongPress = {
+                                        expandedContactId = contact.id
+                                    },
                                     onTap = { }
                                 )
                             },
@@ -458,7 +478,10 @@ fun MainScreen(
             }
 
             currentContactForMenu?.let { contact ->
-                val density = LocalDensity.current
+                val currentLang = LocaleHelper.getSavedLanguage(context)
+                val localizedContext = remember(currentLang) {
+                    LocaleHelper.setLocale(context, currentLang)
+                }
 
                 val menuOffset by remember(cardCoordinates, cardSize, density) {
                     derivedStateOf {
@@ -483,13 +506,16 @@ fun MainScreen(
                 DropdownMenu(
                     expanded = expandedContactId != null,
                     onDismissRequest = { expandedContactId = null },
-                    modifier = Modifier
-                        .width(200.dp),
+                    modifier = Modifier.width(200.dp),
                     offset = menuOffset,
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp,
                     shape = RoundedCornerShape(12.dp)
                 ) {
+                    val callText = localizedContext.getString(R.string.call)
+                    val sendMessageText = localizedContext.getString(R.string.send_message)
+                    val editText = localizedContext.getString(R.string.edit)
+
                     DropdownMenuItem(
                         onClick = {
                             onMakePhoneCall(contact.phone)
@@ -497,7 +523,7 @@ fun MainScreen(
                         },
                         text = {
                             Text(
-                                stringResource(R.string.call),
+                                callText,
                                 color = Color(0xFF4CAF50),
                                 fontWeight = FontWeight.Medium
                             )
@@ -505,7 +531,7 @@ fun MainScreen(
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Call,
-                                contentDescription = null,
+                                contentDescription = callText,
                                 tint = Color(0xFF4CAF50)
                             )
                         }
@@ -519,7 +545,7 @@ fun MainScreen(
                         },
                         text = {
                             Text(
-                                stringResource(R.string.send_message),
+                                sendMessageText,
                                 color = Color(0xFF1E88E5),
                                 fontWeight = FontWeight.Medium
                             )
@@ -527,7 +553,7 @@ fun MainScreen(
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Send,
-                                contentDescription = null,
+                                contentDescription = sendMessageText,
                                 tint = Color(0xFF1E88E5)
                             )
                         }
@@ -541,7 +567,7 @@ fun MainScreen(
                         },
                         text = {
                             Text(
-                                stringResource(R.string.edit),
+                                editText,
                                 color = Color(0xFF8E24AA),
                                 fontWeight = FontWeight.Medium
                             )
@@ -549,7 +575,7 @@ fun MainScreen(
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = null,
+                                contentDescription = editText,
                                 tint = Color(0xFF8E24AA)
                             )
                         }

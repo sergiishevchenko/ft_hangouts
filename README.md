@@ -122,6 +122,13 @@ cd ft_hangouts
 3. Optionally add email, address, notes, and avatar
 4. Tap **Save** to store the contact
 
+<p align="center">
+  <img src="screenshots/contact creation 1 | start.png" alt="1" width="250"/>
+  <img src="screenshots/contact creation 1.png" alt="2" width="250"/>
+  <img src="screenshots/contact creation 1 | switch lang.png" alt="Скрин 3" width="250"/>
+</p>
+
+
 ### Messaging
 1. Long-press on a contact card to open the context menu
 2. Select **Send Message**

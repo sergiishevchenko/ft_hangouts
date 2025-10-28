@@ -39,9 +39,6 @@ com.example.ft_hangouts_42/
 │   │   └── MessageEntity.kt
 │   ├── ContactRepository.kt
 │   └── MessageRepository.kt
-├── model/
-│   ├── Contact.kt
-│   └── Message.kt
 ├── receiver/
 │   └── SMSReceiver.kt
 ├── ui/
@@ -50,12 +47,10 @@ com.example.ft_hangouts_42/
 │   ├── contact/
 │   │   └── ContactEditScreen.kt
 │   ├── conversation/
-│   │   └── ConversationScreen.kt
-│   └── theme/
-│       └── Type.kt
+│       └── ConversationScreen.kt
+│
 └── utils/
     ├── ColorUtils.kt
-    ├── HoverUtils.kt
     └── LocaleHelper.kt
 ```
 

@@ -125,7 +125,7 @@ cd ft_hangouts
 <p align="center">
   <img src="screenshots/contact creation 1 | start.png" alt="1" width="250"/>
   <img src="screenshots/contact creation 1.png" alt="2" width="250"/>
-  <img src="screenshots/contact creation 1 | switch lang.png" alt="Скрин 3" width="250"/>
+  <img src="screenshots/contact list after contact creation.png" alt="3" width="250"/>
 </p>
 
 

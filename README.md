@@ -139,6 +139,11 @@ cd ft_hangouts
 3. Type your message and tap send
 4. Incoming messages are automatically saved and displayed
 
+<p align="center">
+  <img src="screenshots/popup.png" alt="1" width="250"/>
+  <img src="screenshots/sending msg to contact.png " alt="2" width="250"/>
+</p>
+
 ### Making Calls
 1. Long-press on a contact card
 2. Select **Call**

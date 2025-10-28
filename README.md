@@ -141,7 +141,7 @@ cd ft_hangouts
 
 <p align="center">
   <img src="screenshots/popup.png" alt="1" width="250"/>
-  <img src="screenshots/sending msg to contact.png " alt="2" width="250"/>
+  <img src="screenshots/sending msg to contact.png" alt="2" width="250"/>
 </p>
 
 ### Making Calls

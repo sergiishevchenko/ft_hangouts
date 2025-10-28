@@ -181,6 +181,9 @@ When an SMS is received from an unknown number, the app automatically:
 3. Saves the incoming message
 4. Updates the UI in real-time
 
+<img src="screenshots/unknown contact creation 1.png" alt="1" />
+<img src="screenshots/unknown contact creation 2.png" alt="2" />
+
 ### Real-time Updates
 The app uses a coroutine-based polling mechanism to refresh the contact list every 2 seconds, ensuring the UI always reflects the latest data.
 

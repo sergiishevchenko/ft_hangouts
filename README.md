@@ -149,13 +149,28 @@ cd ft_hangouts
 2. Select **Call**
 3. Confirm call permission if prompted
 
+<p align="center">
+  <img src="screenshots/popup.png" alt="1" width="250"/>
+  <img src="screenshots/call.png " alt="2" width="250"/>
+</p>
+
 ### Changing Language
 - Tap the language icon (🌐) in the top bar
 - Switches between English (EN) and French (FR)
 
+<p align="center">
+  <img src="screenshots/en.png" alt="1" width="250"/>
+  <img src="screenshots/fr.png " alt="2" width="250"/>
+</p>
+
 ### Customizing Theme
 - Tap the color palette icon (🎨) in the top bar
 - Toggles between color schemes
+
+<p align="center">
+  <img src="screenshots/empty contact list | en-red.png" alt="1" width="250"/>
+  <img src="screenshots/empty contact list | en-blue.png" alt="2" width="250"/>
+</p>
 
 ## 🔧 Technical Highlights
 

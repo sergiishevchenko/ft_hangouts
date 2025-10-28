@@ -128,6 +128,10 @@ cd ft_hangouts
   <img src="screenshots/contact list after contact creation.png" alt="3" width="250"/>
 </p>
 
+<p align="left">
+  <img src="screenshots/contact creation 2.png" alt="1" width="250"/>
+  <img src="screenshots/contact list.png" alt="2" width="250"/>
+</p>
 
 ### Messaging
 1. Long-press on a contact card to open the context menu

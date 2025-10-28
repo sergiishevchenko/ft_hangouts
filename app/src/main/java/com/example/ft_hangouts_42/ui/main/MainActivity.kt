@@ -61,8 +61,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var contactRepo: ContactRepository
     private lateinit var messageRepo: MessageRepository
 
-    private var wasInBackground = false
     private var lastBackgroundTime = 0L
+    private var isFirstResume = true
 
     private lateinit var callPermissionLauncher: ActivityResultLauncher<String>
 
@@ -158,21 +158,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        if (wasInBackground && lastBackgroundTime != 0L) {
-            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            val wasLanguageChanged = prefs.getBoolean("language_changed", false)
-            if (!wasLanguageChanged) {
-                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
-                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
-                wasInBackground = false
-                lastBackgroundTime = 0L
-            } else {
-                prefs.edit().putBoolean("language_changed", false).apply()
-                wasInBackground = false
-                lastBackgroundTime = 0L
-            }
-        }
     }
 
     private fun requestSmsPermission() {
@@ -195,11 +180,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        wasInBackground = true
         lastBackgroundTime = System.currentTimeMillis()
         getSharedPreferences("prefs", MODE_PRIVATE)
             .edit()
@@ -207,26 +187,22 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
-    override fun onRestart() {
-        super.onRestart()
-        if (wasInBackground && lastBackgroundTime != 0L) {
+    override fun onResume() {
+        super.onResume()
+
+        if (!isFirstResume && lastBackgroundTime != 0L) {
             val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
             val wasLanguageChanged = prefs.getBoolean("language_changed", false)
+
             if (!wasLanguageChanged) {
                 val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
                 Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
-                wasInBackground = false
-                lastBackgroundTime = 0L
-            } else {
-                prefs.edit().putBoolean("language_changed", false).apply()
-                wasInBackground = false
-                lastBackgroundTime = 0L
             }
-        }
-    }
 
-    override fun onResume() {
-        super.onResume()
+            prefs.edit().putBoolean("language_changed", false).apply()
+        }
+
+        isFirstResume = false
     }
 }
 

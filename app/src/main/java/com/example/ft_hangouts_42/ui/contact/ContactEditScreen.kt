@@ -107,7 +107,9 @@ fun ContactEditScreen(
                         )
                     }
                 }
+
                 Spacer(modifier = Modifier.width(16.dp))
+
                 Button(
                     onClick = {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)

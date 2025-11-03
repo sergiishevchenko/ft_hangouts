@@ -1,6 +1,7 @@
 package com.example.ft_hangouts_42.ui.main
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -65,19 +66,25 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var callPermissionLauncher: ActivityResultLauncher<String>
 
+    @SuppressLint("UseKtx")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestSmsPermission()
         contactRepo = ContactRepository(this)
         messageRepo = MessageRepository(this)
 
-        callPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                Toast.makeText(this, "Call permission granted", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, getString(R.string.call_permission_denied), Toast.LENGTH_SHORT).show()
+        callPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) {
+                    Toast.makeText(this, "Call permission granted", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(
+                        this,
+                        getString(R.string.call_permission_denied),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-        }
 
         setContent {
             val savedLang = LocaleHelper.getSavedLanguage(this)
@@ -119,7 +126,8 @@ class MainActivity : ComponentActivity() {
                     if (intent.resolveActivity(packageManager) != null) {
                         startActivity(intent)
                     } else {
-                        Toast.makeText(this, "No app to handle call intent", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "No app to handle call intent", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 } else {
                     callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
@@ -168,7 +176,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Suppress("Deprecated")
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 100) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
@@ -177,6 +189,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("UseKtx")
     override fun onPause() {
         super.onPause()
         lastBackgroundTime = System.currentTimeMillis()
@@ -186,6 +199,7 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
+    @SuppressLint("UseKtx")
     override fun onResume() {
         super.onResume()
 
@@ -227,7 +241,6 @@ fun MainScreen(
     var contactToEdit by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
     var showConversation by rememberSaveable { mutableStateOf(false) }
     var selectedContact by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
-
     var expandedContactId by remember { mutableStateOf<Long?>(null) }
 
     val currentContactForMenu = remember(contacts, expandedContactId) {
@@ -286,7 +299,11 @@ fun MainScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.Language, contentDescription = null)
-                            Text(displayLang, color = textColor, style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                displayLang,
+                                color = textColor,
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                     }
                     IconButton(onClick = {
@@ -312,7 +329,11 @@ fun MainScreen(
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -334,12 +355,9 @@ fun MainScreen(
                                 }
                             }
                             .pointerInput(contact.id) {
-                                detectTapGestures(
-                                    onLongPress = {
-                                        expandedContactId = contact.id
-                                    },
-                                    onTap = { }
-                                )
+                                detectTapGestures(onLongPress = {
+                                    expandedContactId = contact.id
+                                }, onTap = { })
                             },
                         colors = CardDefaults.cardColors(containerColor = backgroundColor),
                         shape = RoundedCornerShape(20.dp),
@@ -357,7 +375,12 @@ fun MainScreen(
                                         color = colorScheme.surface.copy(alpha = 0.85f),
                                         shape = RoundedCornerShape(16.dp)
                                     )
-                                    .padding(start = 20.dp, top = 18.dp, end = 16.dp, bottom = 16.dp),
+                                    .padding(
+                                        start = 20.dp,
+                                        top = 18.dp,
+                                        end = 16.dp,
+                                        bottom = 16.dp
+                                    ),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Row(
@@ -386,7 +409,9 @@ fun MainScreen(
                                             )
                                         }
                                     }
+
                                     Spacer(modifier = Modifier.width(8.dp))
+
                                     Text(
                                         text = contact.name,
                                         style = MaterialTheme.typography.titleMedium.copy(
@@ -403,7 +428,9 @@ fun MainScreen(
                                         modifier = Modifier.size(16.dp),
                                         tint = Color(0xFF4CAF50)
                                     )
+
                                     Spacer(modifier = Modifier.width(8.dp))
+
                                     Text(contact.phone, color = Color(0xFF2E7D32))
                                 }
 
@@ -415,7 +442,9 @@ fun MainScreen(
                                             modifier = Modifier.size(16.dp),
                                             tint = Color(0xFF1E88E5)
                                         )
+
                                         Spacer(modifier = Modifier.width(8.dp))
+
                                         Text(it, color = Color(0xFF1565C0))
                                     }
                                 }
@@ -428,7 +457,9 @@ fun MainScreen(
                                             modifier = Modifier.size(16.dp),
                                             tint = Color(0xFF8E24AA)
                                         )
+
                                         Spacer(modifier = Modifier.width(8.dp))
+
                                         Text(it, color = Color(0xFFEF6C00))
                                     }
                                 }
@@ -442,7 +473,9 @@ fun MainScreen(
                                             modifier = Modifier.size(16.dp),
                                             tint = Color(0xFF8E24AA)
                                         )
+
                                         Spacer(modifier = Modifier.width(8.dp))
+
                                         Text(preview, color = Color(0xFF6A1B9A))
                                     }
                                 }

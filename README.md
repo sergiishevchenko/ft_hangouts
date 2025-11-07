@@ -118,14 +118,17 @@ cd ft_hangouts
 4. Tap **Save** to store the contact
 
 <p align="center">
-  <img src="screenshots/contact creation 1 | start.png" alt="1" width="250"/>
-  <img src="screenshots/contact creation 1.png" alt="2" width="250"/>
-  <img src="screenshots/contact list after contact creation.png" alt="3" width="250"/>
+  <img src="screenshots/icon.png" alt="1" width="250"/>
+  <img src="screenshots/contact-creation-1.png" alt="1" width="250"/>
+  <img src="screenshots/contact-creation-2.png" alt="1" width="250"/>
+  <img src="screenshots/contact-creation-3.png" alt="1" width="250"/>
+  <img src="screenshots/contact-creation-4.png" alt="1" width="250"/>
 </p>
 
 <p align="center">
-  <img src="screenshots/contact creation 2.png" alt="1" width="250"/>
-  <img src="screenshots/contact list.png" alt="2" width="250"/>
+  <img src="screenshots/contact-2-creation-1.png" alt="1" width="250"/>
+  <img src="screenshots/contact-2-creation-2.png" alt="1" width="250"/>
+  <img src="screenshots/contact-2-creation-3.png" alt="1" width="250"/>
 </p>
 
 ### Messaging
@@ -136,7 +139,8 @@ cd ft_hangouts
 
 <p align="center">
   <img src="screenshots/popup.png" alt="1" width="250"/>
-  <img src="screenshots/sending msg to contact.png" alt="2" width="250"/>
+  <img src="screenshots/msg-to-contact.png" alt="2" width="250"/>
+  <img src="screenshots/msg-from-contact.png" alt="2" width="250"/>
 </p>
 
 ### Making Calls
@@ -163,8 +167,8 @@ cd ft_hangouts
 - Toggles between color schemes
 
 <p align="center">
-  <img src="screenshots/empty contact list | en-red.png" alt="1" width="250"/>
-  <img src="screenshots/empty contact list | en-blue.png" alt="2" width="250"/>
+  <img src="screenshots/red.png" alt="1" width="250"/>
+  <img src="screenshots/blue.png" alt="2" width="250"/>
 </p>
 
 ## 🔧 Technical Highlights

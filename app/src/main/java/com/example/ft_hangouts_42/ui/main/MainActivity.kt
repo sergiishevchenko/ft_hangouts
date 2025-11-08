@@ -61,10 +61,16 @@ class MainActivity : ComponentActivity() {
     private lateinit var contactRepo: ContactRepository
     private lateinit var messageRepo: MessageRepository
 
-    private var lastBackgroundTime = 0L
-    private var isFirstResume = true
-
     private lateinit var callPermissionLauncher: ActivityResultLauncher<String>
+    
+    companion object {
+        private const val PREFS_NAME = "prefs"
+        private const val APP_PREFS_NAME = "app_prefs"
+        private const val KEY_LAST_BACKGROUND_TS = "last_background_ts"
+        private const val KEY_WAS_STOPPED = "was_stopped"
+        private const val KEY_IS_FIRST_START = "is_first_start"
+        private const val KEY_LANGUAGE_CHANGED = "language_changed"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -134,9 +140,9 @@ class MainActivity : ComponentActivity() {
                         messageRepo = messageRepo,
                         onLanguageChange = { lang ->
                             LocaleHelper.saveLanguage(this, lang)
-                            getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                            getSharedPreferences(APP_PREFS_NAME, Context.MODE_PRIVATE)
                                 .edit()
-                                .putBoolean("language_changed", true)
+                                .putBoolean(KEY_LANGUAGE_CHANGED, true)
                                 .apply()
                             currentLang = lang
                             recreate()
@@ -178,31 +184,43 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        lastBackgroundTime = System.currentTimeMillis()
-        getSharedPreferences("prefs", MODE_PRIVATE)
-            .edit()
-            .putLong("last_background_ts", lastBackgroundTime)
-            .apply()
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) {
+            val backgroundTime = System.currentTimeMillis()
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit()
+                .putLong(KEY_LAST_BACKGROUND_TS, backgroundTime)
+                .putBoolean(KEY_WAS_STOPPED, true)
+                .apply()
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        if (!isFirstResume && lastBackgroundTime != 0L) {
-            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            val wasLanguageChanged = prefs.getBoolean("language_changed", false)
-
-            if (!wasLanguageChanged) {
-                val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
-                Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
-            }
-
-            prefs.edit().putBoolean("language_changed", false).apply()
+    override fun onStart() {
+        super.onStart()
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val appPrefs = getSharedPreferences(APP_PREFS_NAME, Context.MODE_PRIVATE)
+        
+        val wasStopped = prefs.getBoolean(KEY_WAS_STOPPED, false)
+        val lastBackgroundTime = prefs.getLong(KEY_LAST_BACKGROUND_TS, 0L)
+        val wasLanguageChanged = appPrefs.getBoolean(KEY_LANGUAGE_CHANGED, false)
+        
+        val isFirstStart = !appPrefs.contains(KEY_IS_FIRST_START)
+        if (isFirstStart) {
+            appPrefs.edit().putBoolean(KEY_IS_FIRST_START, false).apply()
         }
 
-        isFirstResume = false
+        if (wasStopped && !isFirstStart && lastBackgroundTime != 0L && !wasLanguageChanged) {
+            val s = SimpleDateFormat.getDateTimeInstance().format(Date(lastBackgroundTime))
+            Toast.makeText(this, "Last backgrounded at $s", Toast.LENGTH_LONG).show()
+            
+            prefs.edit().putBoolean(KEY_WAS_STOPPED, false).apply()
+        }
+        
+        if (wasLanguageChanged) {
+            appPrefs.edit().putBoolean(KEY_LANGUAGE_CHANGED, false).apply()
+            prefs.edit().putBoolean(KEY_WAS_STOPPED, false).apply()
+        }
     }
 }
 

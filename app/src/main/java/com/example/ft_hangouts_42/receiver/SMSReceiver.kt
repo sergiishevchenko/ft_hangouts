@@ -5,12 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.SmsMessage
 import android.os.Build
+import android.util.Log
+import com.example.ft_hangouts_42.FtHangoutsApplication
 import com.example.ft_hangouts_42.data.ContactRepository
 import com.example.ft_hangouts_42.data.MessageRepository
+import com.example.ft_hangouts_42.data.RepositoryException
 import com.example.ft_hangouts_42.data.room.ContactEntity
 import com.example.ft_hangouts_42.data.room.MessageEntity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class SMSReceiver : BroadcastReceiver() {
@@ -32,35 +33,42 @@ class SMSReceiver : BroadcastReceiver() {
                     val address = sms.displayOriginatingAddress ?: continue
                     val body = sms.messageBody ?: continue
 
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val contactRepo = ContactRepository(context)
-                        val messageRepo = MessageRepository(context)
+                    val application = context.applicationContext as? FtHangoutsApplication
+                    application?.applicationScope?.launch {
+                        try {
+                            val contactRepo = ContactRepository(context)
+                            val messageRepo = MessageRepository(context)
 
-                        var contact = contactRepo.getByPhone(address)
+                            var contact = contactRepo.getByPhone(address)
 
-                        if (contact == null) {
-                            val newContact = ContactEntity(
-                                id = 0,
-                                name = address,
-                                phone = address,
-                                email = null,
-                                address = null,
-                                notes = "Auto-created from SMS",
-                                avatarPath = null
-                            )
-                            contactRepo.add(newContact)
+                            if (contact == null) {
+                                val newContact = ContactEntity(
+                                    id = 0,
+                                    name = address,
+                                    phone = address,
+                                    email = null,
+                                    address = null,
+                                    notes = "Auto-created from SMS",
+                                    avatarPath = null
+                                )
+                                contactRepo.add(newContact)
 
-                            contact = contactRepo.getByPhone(address)
-                        }
+                                contact = contactRepo.getByPhone(address)
+                            }
 
-                        contact?.let {
-                            val message = MessageEntity(
-                                contactId = it.id,
-                                text = body,
-                                timestamp = System.currentTimeMillis(),
-                                isSent = false
-                            )
-                            messageRepo.addMessage(message)
+                            contact?.let {
+                                val message = MessageEntity(
+                                    contactId = it.id,
+                                    text = body,
+                                    timestamp = System.currentTimeMillis(),
+                                    isSent = false
+                                )
+                                messageRepo.addMessage(message)
+                            }
+                        } catch (e: RepositoryException) {
+                            Log.e("SMSReceiver", "Failed to process SMS: ${e.message}", e)
+                        } catch (e: Exception) {
+                            Log.e("SMSReceiver", "Unexpected error processing SMS: ${e.message}", e)
                         }
                     }
                 }

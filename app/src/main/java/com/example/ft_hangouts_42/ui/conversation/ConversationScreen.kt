@@ -4,9 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +37,23 @@ fun ConversationScreen(
     val scope = rememberCoroutineScope()
     val messages by repo.getMessagesForContact(contactId).collectAsState(initial = emptyList())
     var inputText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            kotlinx.coroutines.delay(100)
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            errorMessage = null
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -49,54 +70,68 @@ fun ConversationScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                reverseLayout = false
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(messages, key = { it.id }) { msg ->
-                    MessageItem(msg, contactName)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .padding(bottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    modifier = Modifier.weight(1f),
-                    label = { Text(stringResource(R.string.type_message)) }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = {
-                    if (inputText.isNotBlank()) {
-                        scope.launch {
-                            val newMsg = MessageEntity(
-                                contactId = contactId,
-                                text = inputText,
-                                timestamp = System.currentTimeMillis(),
-                                isSent = true
-                            )
-                            repo.addMessage(newMsg)
-                            inputText = ""
-                        }
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    state = listState,
+                    reverseLayout = false
+                ) {
+                    items(messages, key = { it.id }) { msg ->
+                        MessageItem(msg, contactName)
                     }
-                }) {
-                    Text(stringResource(R.string.send))
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .padding(bottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text(stringResource(R.string.type_message)) }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        if (inputText.isNotBlank()) {
+                            scope.launch {
+                                try {
+                                    val newMsg = MessageEntity(
+                                        contactId = contactId,
+                                        text = inputText,
+                                        timestamp = System.currentTimeMillis(),
+                                        isSent = true
+                                    )
+                                    repo.addMessage(newMsg)
+                                    inputText = ""
+                                    kotlinx.coroutines.delay(100)
+                                    listState.animateScrollToItem(messages.size)
+                                } catch (e: Exception) {
+                                    errorMessage = "Failed to send message: ${e.message}"
+                                }
+                            }
+                        }
+                    }) {
+                        Text(stringResource(R.string.send))
+                    }
                 }
             }
+            
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

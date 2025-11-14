@@ -24,8 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +43,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import coil.compose.rememberAsyncImagePainter
 import com.example.ft_hangouts_42.R
@@ -72,11 +73,20 @@ class MainActivity : ComponentActivity() {
         private const val KEY_LANGUAGE_CHANGED = "language_changed"
     }
 
+    private lateinit var smsPermissionLauncher: ActivityResultLauncher<String>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestSmsPermission()
         contactRepo = ContactRepository(this)
         messageRepo = MessageRepository(this)
+
+        smsPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(this, "SMS permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         callPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
@@ -85,6 +95,8 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, getString(R.string.call_permission_denied), Toast.LENGTH_SHORT).show()
             }
         }
+
+        requestSmsPermission()
 
         setContent {
             val savedLang = LocaleHelper.getSavedLanguage(this)
@@ -170,17 +182,7 @@ class MainActivity : ComponentActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS), 100)
-        }
-    }
-
-    @Suppress("Deprecated")
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 100) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                Toast.makeText(this, "SMS permission granted", Toast.LENGTH_SHORT).show()
-            else Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show()
+            smsPermissionLauncher.launch(Manifest.permission.RECEIVE_SMS)
         }
     }
 
@@ -241,7 +243,19 @@ fun MainScreen(
     val context = LocalContext.current
     val density = LocalDensity.current
 
-    var contacts by remember { mutableStateOf(listOf<ContactEntity>()) }
+    val contacts by contactRepo.getAllContacts().collectAsState(initial = emptyList())
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredContacts = remember(contacts, searchQuery) {
+        if (searchQuery.isBlank()) {
+            contacts
+        } else {
+            contacts.filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                it.phone.contains(searchQuery, ignoreCase = true) ||
+                it.email?.contains(searchQuery, ignoreCase = true) == true
+            }
+        }
+    }
     var showEdit by rememberSaveable { mutableStateOf(false) }
     var contactToEdit by rememberSaveable { mutableStateOf<ContactEntity?>(null) }
     var showConversation by rememberSaveable { mutableStateOf(false) }
@@ -267,14 +281,6 @@ fun MainScreen(
 
     LaunchedEffect(topBarColor) {
         prefs.edit().putInt("top_bar_color", topBarColor.toArgbInt()).apply()
-    }
-
-    LaunchedEffect(Unit) {
-        contacts = contactRepo.getAllContacts()
-        while (true) {
-            kotlinx.coroutines.delay(2000)
-            contacts = contactRepo.getAllContacts()
-        }
     }
 
     val textColor =
@@ -331,153 +337,277 @@ fun MainScreen(
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(contacts, key = { it.id }) { contact ->
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateContentSize()
-                            .onGloballyPositioned { layoutCoordinates ->
-                                if (expandedContactId == contact.id) {
-                                    cardCoordinates = layoutCoordinates.positionInWindow()
-                                    cardSize = layoutCoordinates.size
-                                }
-                            }
-                            .pointerInput(contact.id) {
-                                detectTapGestures(
-                                    onLongPress = { expandedContactId = contact.id },
-                                    onTap = { }
-                                )
-                            },
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (contact.avatarPath != null) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(contact.avatarPath),
-                                    contentDescription = "Avatar of ${contact.name}",
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primaryContainer),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = contact.name.take(1).uppercase(),
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    )
-                                }
-                            }
-
-                            Spacer(Modifier.width(16.dp))
-
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = contact.name,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (!showEdit && !showConversation && contacts.isNotEmpty()) {
+                val localizedContext = remember(currentLang) {
+                    LocaleHelper.setLocale(context, currentLang)
+                }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { 
+                            Text(
+                                localizedContext.getString(R.string.search_contacts),
+                                style = MaterialTheme.typography.bodyMedium
+                            ) 
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search, 
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
                                     Icon(
-                                        imageVector = Icons.Default.Phone,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = MaterialTheme.colorScheme.primary
+                                        Icons.Default.Close, 
+                                        contentDescription = "Clear",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-
-                                    Spacer(Modifier.width(6.dp))
-
-                                    Text(contact.phone, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-
-                                contact.email?.takeIf { it.isNotBlank() }?.let {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Email,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-
-                                        Spacer(Modifier.width(6.dp))
-
-                                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-
-                                contact.address?.takeIf { it.isNotBlank() }?.let {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.LocationOn,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-
-                                        Spacer(Modifier.width(6.dp))
-
-                                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-
-                                contact.notes?.takeIf { it.isNotBlank() }?.let {
-                                    val preview = if (it.length > 40) "${it.take(40)}…" else it
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Note,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-
-                                        Spacer(Modifier.width(6.dp))
-
-                                        Text(preview, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
                                 }
                             }
-
-                            IconButton(onClick = { expandedContactId = contact.id }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "More options",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(28.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                }
+            }
+            
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (!showEdit && !showConversation) {
+                if (filteredContacts.isEmpty() && contacts.isNotEmpty()) {
+                    val localizedContext = remember(currentLang) {
+                        LocaleHelper.setLocale(context, currentLang)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = localizedContext.getString(R.string.no_contacts_found),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = localizedContext.getString(R.string.try_different_search),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else if (contacts.isEmpty()) {
+                    val localizedContext = remember(currentLang) {
+                        LocaleHelper.setLocale(context, currentLang)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = localizedContext.getString(R.string.no_contacts_yet),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = localizedContext.getString(R.string.tap_to_add_first_contact),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(filteredContacts, key = { it.id }) { contact ->
+                            ElevatedCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .animateContentSize()
+                                    .onGloballyPositioned { layoutCoordinates ->
+                                        if (expandedContactId == contact.id) {
+                                            cardCoordinates = layoutCoordinates.positionInWindow()
+                                            cardSize = layoutCoordinates.size
+                                        }
+                                    }
+                                    .pointerInput(contact.id) {
+                                        detectTapGestures(
+                                            onLongPress = { expandedContactId = contact.id },
+                                            onTap = { }
+                                        )
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (contact.avatarPath != null) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(contact.avatarPath),
+                                            contentDescription = "Avatar of ${contact.name}",
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = contact.name.take(1).uppercase(),
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(Modifier.width(16.dp))
+
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = contact.name,
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Phone,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+
+                                            Spacer(Modifier.width(6.dp))
+
+                                            Text(contact.phone, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+
+                                        contact.email?.takeIf { it.isNotBlank() }?.let {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Email,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+
+                                                Spacer(Modifier.width(6.dp))
+
+                                                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+
+                                        contact.address?.takeIf { it.isNotBlank() }?.let {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.LocationOn,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+
+                                                Spacer(Modifier.width(6.dp))
+
+                                                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+
+                                        contact.notes?.takeIf { it.isNotBlank() }?.let {
+                                            val preview = if (it.length > 40) "${it.take(40)}…" else it
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Note,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+
+                                                Spacer(Modifier.width(6.dp))
+
+                                                Text(preview, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+
+                                    IconButton(onClick = { expandedContactId = contact.id }) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = "More options",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            currentContactForMenu?.let { contact ->
+            if (!showEdit && !showConversation) {
+                currentContactForMenu?.let { contact ->
                 val currentLang = LocaleHelper.getSavedLanguage(context)
                 val localizedContext = remember(currentLang) {
                     LocaleHelper.setLocale(context, currentLang)
@@ -492,7 +622,7 @@ fun MainScreen(
                             val menuX = cardCenterX - (menuWidthPx / 2.0)
 
                             val cardCenterY = cardCoordinates!!.y + (cardSize!!.height / 2.0)
-                            val estimatedMenuHeightPx = with(density) { 100.dp.toPx() }
+                            val estimatedMenuHeightPx = with(density) { 150.dp.toPx() }
                             val menuY = cardCenterY - (estimatedMenuHeightPx / 2.0)
 
                             DpOffset(
@@ -508,9 +638,9 @@ fun MainScreen(
                     onDismissRequest = { expandedContactId = null },
                     modifier = Modifier.width(200.dp),
                     offset = menuOffset,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp,
-                    shape = RoundedCornerShape(12.dp)
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    tonalElevation = 12.dp,
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     val callText = localizedContext.getString(R.string.call)
                     val sendMessageText = localizedContext.getString(R.string.send_message)
@@ -581,33 +711,34 @@ fun MainScreen(
                         }
                     )
                 }
-            }
+                }
+                }
 
-            if (showEdit) {
-                ContactEditScreen(
-                    repo = contactRepo,
-                    contact = contactToEdit,
-                    onClose = {
-                        scope.launch { contacts = contactRepo.getAllContacts() }
-                        showEdit = false
-                    },
-                    imagePickerLauncher = imagePickerLauncher,
-                    permissionLauncher = permissionLauncher,
-                    selectedImageUri = selectedImageUri,
-                    onSelectedImageUriChanged = onSelectedImageUriChanged
-                )
-            }
+                if (showEdit) {
+                    ContactEditScreen(
+                        repo = contactRepo,
+                        contact = contactToEdit,
+                        onClose = {
+                            showEdit = false
+                        },
+                        imagePickerLauncher = imagePickerLauncher,
+                        permissionLauncher = permissionLauncher,
+                        selectedImageUri = selectedImageUri,
+                        onSelectedImageUriChanged = onSelectedImageUriChanged
+                    )
+                }
 
-            if (showConversation && selectedContact != null) {
-                ConversationScreen(
-                    contactName = selectedContact!!.name,
-                    contactId = selectedContact!!.id,
-                    repo = messageRepo,
-                    onNavigateToContacts = {
-                        showConversation = false
-                        selectedContact = null
-                    }
-                )
+                if (showConversation && selectedContact != null) {
+                    ConversationScreen(
+                        contactName = selectedContact!!.name,
+                        contactId = selectedContact!!.id,
+                        repo = messageRepo,
+                        onNavigateToContacts = {
+                            showConversation = false
+                            selectedContact = null
+                        }
+                    )
+                }
             }
         }
     }

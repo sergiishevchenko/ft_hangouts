@@ -3,6 +3,8 @@ package com.example.ft_hangouts_42.ui.contact
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,8 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.ft_hangouts_42.data.ContactRepository
+import com.example.ft_hangouts_42.data.RepositoryException
 import com.example.ft_hangouts_42.data.room.ContactEntity
 import com.example.ft_hangouts_42.R
+import com.example.ft_hangouts_42.utils.ValidationUtils
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.content.pm.PackageManager
@@ -49,6 +53,12 @@ fun ContactEditScreen(
     var address by rememberSaveable { mutableStateOf(contact?.address ?: "") }
     var notes by rememberSaveable { mutableStateOf(contact?.notes ?: "") }
     var avatarPath by rememberSaveable { mutableStateOf(contact?.avatarPath) }
+    
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var phoneError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var showErrorSnackbar by remember { mutableStateOf<String?>(null) }
+    var imageLoadError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(selectedImageUri) {
         selectedImageUri?.let { uri ->
@@ -62,9 +72,27 @@ fun ContactEditScreen(
                 }
                 avatarPath = newFile.absolutePath
                 onSelectedImageUriChanged(null)
+                imageLoadError = null
             } catch (e: Exception) {
-                e.printStackTrace()
+                imageLoadError = "Failed to load image: ${e.message}"
+                onSelectedImageUriChanged(null)
             }
+        }
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    LaunchedEffect(showErrorSnackbar) {
+        showErrorSnackbar?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            showErrorSnackbar = null
+        }
+    }
+
+    LaunchedEffect(imageLoadError) {
+        imageLoadError?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            imageLoadError = null
         }
     }
 
@@ -72,143 +100,203 @@ fun ContactEditScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Row(
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(100.dp)
-                        .border(2.dp, Color.Gray, CircleShape),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (avatarPath != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(avatarPath),
-                            contentDescription = "Contact Avatar",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Text(
-                            text = name.take(1).uppercase(),
-                            fontSize = 36.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Button(
-                    onClick = {
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
-                            == PackageManager.PERMISSION_GRANTED
-                        ) {
-                            imagePickerLauncher.launch("image/*")
-                        } else {
-                            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.change_avatar))
-                }
-            }
-
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.name)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = { Text(stringResource(R.string.phone)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text(stringResource(R.string.email)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = address,
-                onValueChange = { address = it },
-                label = { Text(stringResource(R.string.address)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text(stringResource(R.string.notes)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row {
-                Button(onClick = {
-                    scope.launch {
-                        if (contact == null) {
-                            repo.add(
-                                ContactEntity(
-                                    name = name,
-                                    phone = phone,
-                                    email = email.ifBlank { null },
-                                    address = address.ifBlank { null },
-                                    notes = notes.ifBlank { null },
-                                    avatarPath = avatarPath
-                                )
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .border(2.dp, Color.Gray, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (avatarPath != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(avatarPath),
+                                contentDescription = "Contact Avatar",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
                         } else {
-                            repo.update(
-                                contact.copy(
-                                    name = name,
-                                    phone = phone,
-                                    email = email.ifBlank { null },
-                                    address = address.ifBlank { null },
-                                    notes = notes.ifBlank { null },
-                                    avatarPath = avatarPath
-                                )
+                            Text(
+                                text = name.take(1).uppercase(),
+                                fontSize = 36.sp,
+                                color = Color.Gray
                             )
                         }
-                        onClose()
                     }
-                }) {
-                    Text(stringResource(R.string.save))
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Button(
+                        onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
+                                == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                imagePickerLauncher.launch("image/*")
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.change_avatar))
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { 
+                        name = it
+                        nameError = null
+                    },
+                    label = { Text(stringResource(R.string.name)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = nameError != null,
+                    supportingText = nameError?.let { { Text(it) } }
+                )
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { 
+                        phone = it
+                        phoneError = null
+                    },
+                    label = { Text(stringResource(R.string.phone)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = phoneError != null,
+                    supportingText = phoneError?.let { { Text(it) } }
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { 
+                        email = it
+                        emailError = null
+                    },
+                    label = { Text(stringResource(R.string.email)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = emailError != null,
+                    supportingText = emailError?.let { { Text(it) } }
+                )
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text(stringResource(R.string.address)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.notes)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                if (contact != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row {
                     Button(onClick = {
+                        nameError = null
+                        phoneError = null
+                        emailError = null
+                        
+                        var isValid = true
+                        if (name.isBlank()) {
+                            nameError = "Name is required"
+                            isValid = false
+                        }
+                        
+                        if (phone.isBlank()) {
+                            phoneError = "Phone is required"
+                            isValid = false
+                        } else if (!ValidationUtils.isValidPhone(phone)) {
+                            phoneError = "Invalid phone number"
+                            isValid = false
+                        }
+                        
+                        if (email.isNotBlank() && !ValidationUtils.isValidEmail(email)) {
+                            emailError = "Invalid email address"
+                            isValid = false
+                        }
+                        
+                        if (!isValid) return@Button
+                        
                         scope.launch {
-                            repo.delete(contact)
-                            onClose()
+                            try {
+                                val formattedPhone = ValidationUtils.formatPhone(phone)
+                                if (contact == null) {
+                                    repo.add(
+                                        ContactEntity(
+                                            name = name.trim(),
+                                            phone = formattedPhone,
+                                            email = email.trim().ifBlank { null },
+                                            address = address.trim().ifBlank { null },
+                                            notes = notes.trim().ifBlank { null },
+                                            avatarPath = avatarPath
+                                        )
+                                    )
+                                } else {
+                                    repo.update(
+                                        contact.copy(
+                                            name = name.trim(),
+                                            phone = formattedPhone,
+                                            email = email.trim().ifBlank { null },
+                                            address = address.trim().ifBlank { null },
+                                            notes = notes.trim().ifBlank { null },
+                                            avatarPath = avatarPath
+                                        )
+                                    )
+                                }
+                                onClose()
+                            } catch (e: RepositoryException) {
+                                showErrorSnackbar = "Failed to save contact: ${e.message}"
+                            } catch (e: Exception) {
+                                showErrorSnackbar = "Unexpected error: ${e.message}"
+                            }
                         }
                     }) {
-                        Text(stringResource(R.string.delete))
+                        Text(stringResource(R.string.save))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
-                }
 
-                Button(onClick = onClose) {
-                    Text(stringResource(R.string.cancel))
+                    if (contact != null) {
+                        Button(onClick = {
+                            scope.launch {
+                                try {
+                                    repo.delete(contact)
+                                    onClose()
+                                } catch (e: RepositoryException) {
+                                    showErrorSnackbar = "Failed to delete contact: ${e.message}"
+                                } catch (e: Exception) {
+                                    showErrorSnackbar = "Unexpected error: ${e.message}"
+                                }
+                            }
+                        }) {
+                            Text(stringResource(R.string.delete))
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    Button(onClick = onClose) {
+                        Text(stringResource(R.string.cancel))
+                    }
                 }
             }
+            
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

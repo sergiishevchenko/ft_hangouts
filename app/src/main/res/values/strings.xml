@@ -17,4 +17,9 @@
     <string name="edit">Edit</string>
     <string name="call">Call</string>
     <string name="call_permission_denied">Permission to make phone calls is denied. Please enable it in settings.</string>
+    <string name="search_contacts">Search contacts...</string>
+    <string name="no_contacts_found">No contacts found</string>
+    <string name="try_different_search">Try a different search query</string>
+    <string name="no_contacts_yet">No contacts yet</string>
+    <string name="tap_to_add_first_contact">Tap + to add your first contact</string>
 </resources>

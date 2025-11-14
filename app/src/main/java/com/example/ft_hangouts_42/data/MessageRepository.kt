@@ -10,7 +10,11 @@ class MessageRepository(context: Context) {
     private val messageDao = AppDatabase.getDatabase(context).messageDao()
 
     suspend fun addMessage(message: MessageEntity) {
-        messageDao.insert(message)
+        try {
+            messageDao.insert(message)
+        } catch (e: Exception) {
+            throw RepositoryException("Failed to add message", e)
+        }
     }
 
     fun getMessagesForContact(contactId: Long): Flow<List<MessageEntity>> {

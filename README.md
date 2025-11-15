@@ -180,9 +180,10 @@ cd ft_hangouts
 <p align="center">
   <img src="screenshots/icon.png" alt="1" width="250"/>
   <img src="screenshots/contact-creation-1.png" alt="1" width="250"/>
+</p>
+<p align="center">
   <img src="screenshots/contact-creation-2.png" alt="1" width="250"/>
   <img src="screenshots/contact-creation-3.png" alt="1" width="250"/>
-  <img src="screenshots/contact-creation-4.png" alt="1" width="250"/>
 </p>
 
 <p align="center">

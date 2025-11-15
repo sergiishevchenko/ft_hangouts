@@ -191,6 +191,12 @@ cd ft_hangouts
   <img src="screenshots/contact-2-creation-3.png" alt="1" width="250"/>
 </p>
 
+The screenshot below highlights the compose view: the input field, chat history, and send button sit on the same screen so you can keep the conversation flowing without switching contexts.
+
+<p align="center">
+  <img src="screenshots/msg-to-contact.png" alt="Message to contact screen" width="250"/>
+</p>
+
 ### Making Calls
 1. Long-press on a contact card
 2. Select **Call** from the context menu

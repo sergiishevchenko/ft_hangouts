@@ -54,9 +54,6 @@ fun ContactEditScreen(
     var notes by rememberSaveable { mutableStateOf(contact?.notes ?: "") }
     var avatarPath by rememberSaveable { mutableStateOf(contact?.avatarPath) }
     
-    var nameError by remember { mutableStateOf<String?>(null) }
-    var phoneError by remember { mutableStateOf<String?>(null) }
-    var emailError by remember { mutableStateOf<String?>(null) }
     var showErrorSnackbar by remember { mutableStateOf<String?>(null) }
     var imageLoadError by remember { mutableStateOf<String?>(null) }
 
@@ -156,36 +153,21 @@ fun ContactEditScreen(
 
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { 
-                        name = it
-                        nameError = null
-                    },
+                    onValueChange = { name = it },
                     label = { Text(stringResource(R.string.name)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = nameError != null,
-                    supportingText = nameError?.let { { Text(it) } }
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = phone,
-                    onValueChange = { 
-                        phone = it
-                        phoneError = null
-                    },
+                    onValueChange = { phone = it },
                     label = { Text(stringResource(R.string.phone)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = phoneError != null,
-                    supportingText = phoneError?.let { { Text(it) } }
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { 
-                        email = it
-                        emailError = null
-                    },
+                    onValueChange = { email = it },
                     label = { Text(stringResource(R.string.email)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = emailError != null,
-                    supportingText = emailError?.let { { Text(it) } }
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = address,
@@ -204,31 +186,6 @@ fun ContactEditScreen(
 
                 Row {
                     Button(onClick = {
-                        nameError = null
-                        phoneError = null
-                        emailError = null
-                        
-                        var isValid = true
-                        if (name.isBlank()) {
-                            nameError = "Name is required"
-                            isValid = false
-                        }
-                        
-                        if (phone.isBlank()) {
-                            phoneError = "Phone is required"
-                            isValid = false
-                        } else if (!ValidationUtils.isValidPhone(phone)) {
-                            phoneError = "Invalid phone number"
-                            isValid = false
-                        }
-                        
-                        if (email.isNotBlank() && !ValidationUtils.isValidEmail(email)) {
-                            emailError = "Invalid email address"
-                            isValid = false
-                        }
-                        
-                        if (!isValid) return@Button
-                        
                         scope.launch {
                             try {
                                 val formattedPhone = ValidationUtils.formatPhone(phone)

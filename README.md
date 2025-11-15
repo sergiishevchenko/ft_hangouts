@@ -11,7 +11,6 @@ A modern Android contacts and messaging application built with Jetpack Compose a
 - **Avatar Support**: Add custom profile pictures for contacts
 - **Auto-Contact Creation**: Automatically creates contacts from unknown SMS senders
 - **Contact Search**: Real-time search functionality to quickly find contacts
-- **Input Validation**: Phone number and email validation for data integrity
 - **Error Handling**: Comprehensive error handling with user-friendly notifications
 
 ### User Experience
@@ -102,10 +101,9 @@ com.example.ft_hangouts_42/
 - Try-catch blocks in all repository methods
 - User-friendly error messages via Snackbar
 
-**Input Validation**
-- Phone number validation (7-15 digits)
-- Email format validation
-- Real-time validation feedback in UI
+**Phone Number Formatting**
+- Automatically strips non-numeric characters before saving
+- Ensures consistent phone storage format
 
 **Application-scoped Coroutines**
 - `FtHangoutsApplication` provides application-scoped CoroutineScope
@@ -247,11 +245,10 @@ When an SMS is received from an unknown number, the app automatically:
 - Graceful degradation when operations fail
 - Proper error logging for debugging
 
-### Input Validation
-- Real-time validation for phone numbers and emails
-- Visual feedback for invalid input
-- Prevents invalid data from being saved
-- Supports international phone number formats
+### Phone Number Formatting
+- Removes non-numeric characters prior to persistence
+- Provides consistent phone representation across the app
+- Keeps stored numbers compatible with international formats
 
 ### Modern Permission Handling
 - Uses `ActivityResultLauncher` (modern Android API)
@@ -269,7 +266,7 @@ When an SMS is received from an unknown number, the app automatically:
 
 1. **Reactive Programming**: Uses Kotlin Flow for real-time updates
 2. **Error Handling**: Comprehensive error handling with user notifications
-3. **Input Validation**: Validates user input before saving
+3. **Input Formatting**: Normalizes phone numbers before saving
 4. **State Management**: ViewModel pattern for complex state
 5. **Memory Management**: Application-scoped CoroutineScope prevents leaks
 6. **Modern APIs**: Uses ActivityResultLauncher for permissions

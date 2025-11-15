@@ -177,6 +177,8 @@ cd ft_hangouts
 4. Incoming messages are automatically saved and displayed
 5. Messages auto-scroll to the latest when new messages arrive
 
+**First Contact Creation**: Start from the empty state, tap the plus button, and enter the primary contact details; the preview screens below show the flow from blank form to a fully saved entry.
+
 <p align="center">
   <img src="screenshots/icon.png" alt="1" width="250"/>
   <img src="screenshots/contact-creation-1.png" alt="1" width="250"/>
@@ -186,13 +188,15 @@ cd ft_hangouts
   <img src="screenshots/contact-creation-3.png" alt="1" width="250"/>
 </p>
 
+**Second Contact Creation**: Repeat the process to add another person—fill out the form, attach notes if needed, and confirm to see the list grow with multiple contacts.
+
 <p align="center">
   <img src="screenshots/contact-2-creation-1.png" alt="1" width="250"/>
   <img src="screenshots/contact-2-creation-2.png" alt="1" width="250"/>
   <img src="screenshots/contact-2-creation-3.png" alt="1" width="250"/>
 </p>
 
-The screenshot below highlights the compose view: the input field, chat history, and send button sit on the same screen so you can keep the conversation flowing without switching contexts.
+**Messaging UI**: Compose field, chat history, and send button share one screen so you can reply without leaving the conversation.
 
 <p align="center">
   <img src="screenshots/msg-to-contact.png" alt="Message to contact screen" width="250"/>
